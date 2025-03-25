@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useMedia } from "@/context/MediaContext";
 import MediaCard from "@/components/MediaCard";
@@ -7,7 +6,7 @@ import { Link } from "react-router-dom";
 import { PlusCircle, Film, Tv, BookOpen } from "lucide-react";
 
 const Home = () => {
-  const { movies, tvShows, books, currentUser } = useMedia();
+  const { movies, tvShows, books } = useMedia();
 
   // Get recent media across all types, sorted by added date
   const recentMedia = [...movies, ...tvShows, ...books]
@@ -83,11 +82,9 @@ const Home = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-semibold">Recently Added</h2>
-            {currentUser && (
-              <Button asChild variant="ghost">
-                <Link to="/profile">View All</Link>
-              </Button>
-            )}
+            <Button asChild variant="ghost">
+              <Link to="/profile">View All</Link>
+            </Button>
           </div>
           
           {recentMedia.length > 0 ? (
