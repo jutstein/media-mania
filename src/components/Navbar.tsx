@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Film, Tv, User, LogOut, Search, LogIn } from "lucide-react";
-import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, setCurrentUser, users } = useMedia();
   const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
@@ -40,15 +38,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await signOut();
-    setCurrentUser(null);
     navigate("/");
-  };
-
-  const switchUser = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (user) {
-      setCurrentUser(user);
-    }
   };
 
   return (
@@ -124,7 +114,7 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar>
-                    <AvatarImage src={currentUser?.profilePic} alt={user.email || ''} />
+                    <AvatarImage src="" alt={user.email || ''} />
                     <AvatarFallback>{user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -139,25 +129,6 @@ const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {currentUser && (
-                  <>
-                    <DropdownMenuLabel>Switch User (Demo)</DropdownMenuLabel>
-                    {users.map((demoUser) => (
-                      <DropdownMenuItem
-                        key={demoUser.id}
-                        onClick={() => switchUser(demoUser.id)}
-                        className="cursor-pointer"
-                      >
-                        <Avatar className="h-6 w-6 mr-2">
-                          <AvatarImage src={demoUser.profilePic} />
-                          <AvatarFallback>{demoUser.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{demoUser.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                  </>
-                )}
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>

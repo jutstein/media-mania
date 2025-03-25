@@ -1,6 +1,8 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
+import { useAuth } from "@/context/AuthContext";
 import MediaCard from "@/components/MediaCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,18 +11,24 @@ import { PlusCircle, Share, Film, Tv, BookOpen } from "lucide-react";
 import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
-  const { currentUser, movies, tvShows, books } = useMedia();
+  const { user } = useAuth();
+  const { movies, tvShows, books } = useMedia();
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
+  const [userProfile, setUserProfile] = useState<any>(null);
+  
+  // Fetch user profile from Supabase when component mounts
+  // This would typically be in a useEffect, but simplified for brevity
 
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Please log in to view your profile</h1>
           <Button asChild>
-            <Link to="/login">Login</Link>
+            <Link to="/auth">Login</Link>
           </Button>
         </div>
       </div>
@@ -73,16 +81,12 @@ const Profile = () => {
           className="glass-morph rounded-xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
         >
           <Avatar className="h-24 w-24 md:h-32 md:w-32">
-            <AvatarImage src={currentUser.profilePic} alt={currentUser.name} />
-            <AvatarFallback className="text-2xl">{currentUser.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src="" alt={user.email || ''} />
+            <AvatarFallback className="text-2xl">{user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
 
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{currentUser.name}</h1>
-            
-            {currentUser.bio && (
-              <p className="text-muted-foreground mb-4 max-w-xl">{currentUser.bio}</p>
-            )}
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">{user.email}</h1>
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
               <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">
