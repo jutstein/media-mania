@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Film, Tv, User, LogOut, Search } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, Film, Tv, User, LogOut, Search, LogIn } from "lucide-react";
 import { useMedia } from "@/context/MediaContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +18,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser, setCurrentUser, users } = useMedia();
+  const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,8 +38,10 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     setCurrentUser(null);
+    navigate("/");
   };
 
   const switchUser = (userId: string) => {
@@ -114,13 +119,13 @@ const Navbar = () => {
             </Button>
           </div>
 
-          {currentUser ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar>
-                    <AvatarImage src={currentUser.profilePic} alt={currentUser.name} />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={currentUser?.profilePic} alt={user.email || ''} />
+                    <AvatarFallback>{user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -134,21 +139,25 @@ const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Switch User (Demo)</DropdownMenuLabel>
-                {users.map((user) => (
-                  <DropdownMenuItem
-                    key={user.id}
-                    onClick={() => switchUser(user.id)}
-                    className="cursor-pointer"
-                  >
-                    <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={user.profilePic} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span>{user.name}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
+                {currentUser && (
+                  <>
+                    <DropdownMenuLabel>Switch User (Demo)</DropdownMenuLabel>
+                    {users.map((demoUser) => (
+                      <DropdownMenuItem
+                        key={demoUser.id}
+                        onClick={() => switchUser(demoUser.id)}
+                        className="cursor-pointer"
+                      >
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarImage src={demoUser.profilePic} />
+                          <AvatarFallback>{demoUser.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span>{demoUser.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
@@ -157,7 +166,10 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <Button asChild>
-              <Link to="/login">Login</Link>
+              <Link to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
             </Button>
           )}
         </div>
