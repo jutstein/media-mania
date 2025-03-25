@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/select";
 import StarRating from "@/components/StarRating";
 import { MediaType, Season } from "@/types";
-import { BookOpen, Film, Tv, Plus, Minus } from "lucide-react";
+import { BookOpen, Film, Tv, Plus, Minus, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
 const AddMedia = () => {
   const navigate = useNavigate();
-  const { addMediaItem } = useMedia();
+  const { addMediaItem, generateImageForTitle } = useMedia();
 
   const [title, setTitle] = useState("");
   const [type, setType] = useState<MediaType>("movie");
@@ -29,11 +29,13 @@ const AddMedia = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
-  const [seasons, setSeasons] = useState<Season[]>([{ number: 1, watched: false }]);
+  const [seasons, setSeasons] = useState<Season[]>([{ number: 1, watched: false, rating: 0 }]);
+  const [generateImage, setGenerateImage] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const handleAddSeason = () => {
     if (seasons.length >= 20) return;
-    setSeasons([...seasons, { number: seasons.length + 1, watched: false }]);
+    setSeasons([...seasons, { number: seasons.length + 1, watched: false, rating: 0 }]);
   };
 
   const handleRemoveSeason = () => {
@@ -51,7 +53,17 @@ const AddMedia = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSeasonRatingChange = (seasonNumber: number, newRating: number) => {
+    setSeasons(
+      seasons.map((season) =>
+        season.number === seasonNumber
+          ? { ...season, rating: newRating }
+          : season
+      )
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Basic validation
@@ -60,12 +72,26 @@ const AddMedia = () => {
       return;
     }
 
+    let finalImageUrl = imageUrl;
+    
+    // Generate image if requested and no image URL is provided
+    if (generateImage && !imageUrl) {
+      setIsGeneratingImage(true);
+      try {
+        finalImageUrl = await generateImageForTitle(title, type);
+      } catch (error) {
+        console.error("Failed to generate image:", error);
+      } finally {
+        setIsGeneratingImage(false);
+      }
+    }
+
     const mediaItem = {
       title,
       type,
       creator: creator || undefined,
       releaseYear: releaseYear ? parseInt(releaseYear) : undefined,
-      imageUrl: imageUrl || undefined,
+      imageUrl: finalImageUrl || undefined,
       review: rating || review.trim() ? {
         rating,
         text: review,
@@ -174,13 +200,34 @@ const AddMedia = () => {
               </div>
 
               <div>
-                <Label htmlFor="image">Image URL (optional)</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="image">Image URL (optional)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="generate-image" className="text-sm cursor-pointer flex items-center">
+                      <input
+                        id="generate-image"
+                        type="checkbox"
+                        className="mr-2"
+                        checked={generateImage}
+                        onChange={(e) => setGenerateImage(e.target.checked)}
+                      />
+                      Auto-generate image
+                    </Label>
+                  </div>
+                </div>
                 <Input
                   id="image"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Enter image URL"
+                  placeholder={generateImage ? "Will be auto-generated from title" : "Enter image URL"}
+                  disabled={generateImage}
+                  className={generateImage ? "bg-muted" : ""}
                 />
+                {generateImage && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Image will be generated based on the title when you save
+                  </p>
+                )}
               </div>
 
               {type === "tv" && (
@@ -209,26 +256,45 @@ const AddMedia = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                  <div className="space-y-3 mt-2">
                     {seasons.map((season) => (
-                      <Button
-                        key={season.number}
-                        type="button"
-                        variant={season.watched ? "default" : "outline"}
-                        className="w-full text-sm"
-                        onClick={() => toggleSeasonWatched(season.number)}
-                      >
-                        Season {season.number}
-                      </Button>
+                      <div key={season.number} className="p-3 border rounded-md">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`season-${season.number}`}
+                              checked={season.watched}
+                              onChange={() => toggleSeasonWatched(season.number)}
+                              className="mr-2"
+                            />
+                            <Label htmlFor={`season-${season.number}`} className="cursor-pointer">
+                              Season {season.number}
+                            </Label>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <Label className="text-sm">Rating</Label>
+                          <StarRating 
+                            initialRating={season.rating || 0} 
+                            onChange={(rating) => handleSeasonRatingChange(season.number, rating)} 
+                          />
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
               <div>
-                <Label htmlFor="rating">Rating</Label>
+                <Label htmlFor="rating">Overall Rating</Label>
                 <div className="mt-2">
                   <StarRating initialRating={rating} onChange={setRating} />
+                  {type === "tv" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      For TV shows, the overall rating will reflect the average of your season ratings
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -261,7 +327,9 @@ const AddMedia = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={isGeneratingImage}>
+                {isGeneratingImage ? "Generating Image..." : "Save"}
+              </Button>
             </div>
           </form>
         </motion.div>

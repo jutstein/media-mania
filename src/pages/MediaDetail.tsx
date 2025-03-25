@@ -32,7 +32,7 @@ import { motion } from "framer-motion";
 const MediaDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getMediaItemById, updateMediaItem, deleteMediaItem } = useMedia();
+  const { getMediaItemById, updateMediaItem, deleteMediaItem, generateImageForTitle } = useMedia();
   
   const mediaItem = getMediaItemById(id || "");
   
@@ -43,12 +43,19 @@ const MediaDetail = () => {
     mediaItem?.seasons || []
   );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   useEffect(() => {
     if (!mediaItem) {
       navigate("/not-found");
     }
   }, [mediaItem, navigate]);
+
+  useEffect(() => {
+    if (mediaItem?.seasons) {
+      setWatchedSeasons(mediaItem.seasons);
+    }
+  }, [mediaItem]);
 
   if (!mediaItem) {
     return null;
@@ -81,6 +88,32 @@ const MediaDetail = () => {
     );
   };
 
+  const handleSeasonRatingChange = (seasonNumber: number, newRating: number) => {
+    setWatchedSeasons((prev) =>
+      prev.map((season) =>
+        season.number === seasonNumber
+          ? { ...season, rating: newRating }
+          : season
+      )
+    );
+  };
+
+  const handleGenerateImage = async () => {
+    if (!mediaItem.title) return;
+    
+    setIsGeneratingImage(true);
+    try {
+      const imageUrl = await generateImageForTitle(mediaItem.title, mediaItem.type);
+      updateMediaItem(mediaItem.id, { imageUrl });
+      toast.success("Image generated successfully!");
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      toast.error("Failed to generate image. Please try again later.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handleShare = () => {
     // In a real app, this would generate a shareable link
     navigator.clipboard.writeText(window.location.href);
@@ -92,6 +125,14 @@ const MediaDetail = () => {
     tv: <Tv className="h-6 w-6" />,
     book: <Book className="h-6 w-6" />,
   };
+
+  // Calculate the average rating for TV shows
+  const averageSeasonRating = watchedSeasons.length > 0
+    ? watchedSeasons
+        .filter(s => s.rating !== undefined && s.rating > 0)
+        .reduce((sum, s) => sum + (s.rating || 0), 0) / 
+        watchedSeasons.filter(s => s.rating !== undefined && s.rating > 0).length
+    : 0;
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
@@ -122,8 +163,18 @@ const MediaDetail = () => {
                   className="h-full w-full object-cover rounded-lg"
                 />
               ) : (
-                <div className="h-full w-full bg-muted flex items-center justify-center rounded-lg">
+                <div className="h-full w-full bg-muted flex flex-col items-center justify-center rounded-lg text-center p-4">
                   {iconMap[mediaItem.type]}
+                  <p className="mt-4 text-sm text-muted-foreground">No image available</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage}
+                  >
+                    {isGeneratingImage ? "Generating..." : "Generate Image"}
+                  </Button>
                 </div>
               )}
             </div>
@@ -199,38 +250,65 @@ const MediaDetail = () => {
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-3">Seasons</h3>
                 {isEditing ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="space-y-3">
                     {watchedSeasons.map((season) => (
                       <div
                         key={season.number}
-                        className="flex items-center space-x-2 p-2 rounded border"
+                        className="p-3 border rounded-md"
                       >
-                        <Checkbox
-                          id={`season-${season.number}`}
-                          checked={season.watched}
-                          onCheckedChange={() => handleSeasonToggle(season.number)}
-                        />
-                        <Label htmlFor={`season-${season.number}`} className="cursor-pointer">
-                          Season {season.number}
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`season-${season.number}`}
+                              checked={season.watched}
+                              onCheckedChange={() => handleSeasonToggle(season.number)}
+                            />
+                            <Label htmlFor={`season-${season.number}`} className="cursor-pointer">
+                              Season {season.number}
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor={`rating-${season.number}`} className="text-sm mr-2">
+                              Rating:
+                            </Label>
+                            <StarRating 
+                              initialRating={season.rating || 0} 
+                              onChange={(rating) => handleSeasonRatingChange(season.number, rating)}
+                              size={18}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
+                    {mediaItem.type === "tv" && averageSeasonRating > 0 && (
+                      <div className="mt-3 text-sm">
+                        <p className="text-muted-foreground">Average season rating: {averageSeasonRating.toFixed(1)}</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {mediaItem.seasons.map((season) => (
-                      <div
-                        key={season.number}
-                        className={`px-3 py-1 rounded-full text-sm ${
-                          season.watched
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        Season {season.number}
-                        {season.watched ? " ✓" : ""}
+                  <div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {mediaItem.seasons.map((season) => (
+                        <div
+                          key={season.number}
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            season.watched
+                              ? "bg-primary/10 text-primary"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          Season {season.number}
+                          {season.watched ? " ✓" : ""}
+                          {season.rating ? ` (${season.rating}★)` : ""}
+                        </div>
+                      ))}
+                    </div>
+                    {mediaItem.type === "tv" && averageSeasonRating > 0 && (
+                      <div className="text-sm">
+                        <p className="text-muted-foreground">Average season rating: {averageSeasonRating.toFixed(1)}</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

@@ -19,6 +19,14 @@ const MediaCard = ({ item }: MediaCardProps) => {
     book: <Book className="text-primary h-5 w-5" />,
   };
 
+  // Calculate average season rating for TV shows
+  const averageSeasonRating = item.type === "tv" && item.seasons
+    ? item.seasons
+        .filter(s => s.rating !== undefined && s.rating > 0)
+        .reduce((sum, s) => sum + (s.rating || 0), 0) / 
+        item.seasons.filter(s => s.rating !== undefined && s.rating > 0).length || 0
+    : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -50,8 +58,12 @@ const MediaCard = ({ item }: MediaCardProps) => {
             isHovered ? "opacity-100" : "opacity-0"
           }`}
         >
-          {item.review && (
-            <StarRating initialRating={item.review.rating} readonly size={16} />
+          {(item.review?.rating || averageSeasonRating > 0) && (
+            <StarRating 
+              initialRating={item.review?.rating || averageSeasonRating} 
+              readonly 
+              size={16} 
+            />
           )}
           <Link to={`/media/${item.id}`} className="absolute inset-0 z-10" aria-label={`View details for ${item.title}`}></Link>
         </div>
@@ -67,6 +79,9 @@ const MediaCard = ({ item }: MediaCardProps) => {
       {item.type === "tv" && item.seasons && (
         <div className="mt-2 text-xs text-muted-foreground">
           {item.seasons.filter(s => s.watched).length} of {item.seasons.length} seasons watched
+          {averageSeasonRating > 0 && (
+            <span className="ml-2">(Avg: {averageSeasonRating.toFixed(1)}★)</span>
+          )}
         </div>
       )}
     </motion.div>

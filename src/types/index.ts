@@ -6,6 +6,7 @@ export interface Season {
   watched: boolean;
   episodesWatched?: number;
   totalEpisodes?: number;
+  rating?: number; // Add rating property to seasons
 }
 
 export interface Review {
