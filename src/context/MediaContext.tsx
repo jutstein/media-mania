@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { MediaItem, MediaType, User } from "@/types";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 interface MediaContextType {
   movies: MediaItem[];
@@ -18,7 +17,6 @@ interface MediaContextType {
   setCurrentUser: (user: User | null) => void;
 }
 
-// Mock initial data for demonstration
 const mockUsers: User[] = [
   {
     id: "user1",
@@ -132,8 +130,6 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const getUserMediaItems = (userId: string) => {
-    // In a real app, this would filter by user ID
-    // For demo purposes, we'll just return all media for now
     return media;
   };
 

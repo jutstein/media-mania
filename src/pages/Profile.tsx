@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
@@ -9,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlusCircle, Share, Film, Tv, BookOpen } from "lucide-react";
 import { MediaType } from "@/types";
 import { motion } from "framer-motion";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const Profile = () => {
   const { currentUser, movies, tvShows, books } = useMedia();
@@ -28,7 +27,6 @@ const Profile = () => {
     );
   }
 
-  // Get counts for each media type
   const mediaCount = {
     all: movies.length + tvShows.length + books.length,
     movie: movies.length,
@@ -46,7 +44,6 @@ const Profile = () => {
   };
 
   const handleShare = () => {
-    // In a real app, this would generate a shareable link
     navigator.clipboard.writeText(window.location.href);
     toast.success("Profile link copied to clipboard!");
   };
@@ -69,7 +66,6 @@ const Profile = () => {
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
       <div className="container mx-auto max-w-6xl">
-        {/* User Profile Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -115,7 +111,6 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        {/* Media Collection */}
         <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as MediaType | "all")}>
           <div className="flex justify-between items-center mb-6">
             <TabsList>
