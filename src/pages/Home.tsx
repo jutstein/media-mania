@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useMedia } from "@/context/MediaContext";
 import MediaCard from "@/components/MediaCard";
@@ -77,7 +76,7 @@ const Home = () => {
         
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent"></div>
       </section>
-
+      
       {/* Recent Media Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto">

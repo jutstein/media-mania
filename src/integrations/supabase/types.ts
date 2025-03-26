@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      media_items: {
+        Row: {
+          added_date: string
+          created_at: string
+          creator: string | null
+          id: string
+          image_url: string | null
+          release_year: number | null
+          review_date: string | null
+          review_rating: number | null
+          review_text: string | null
+          seasons: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          added_date: string
+          created_at?: string
+          creator?: string | null
+          id?: string
+          image_url?: string | null
+          release_year?: number | null
+          review_date?: string | null
+          review_rating?: number | null
+          review_text?: string | null
+          seasons?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          added_date?: string
+          created_at?: string
+          creator?: string | null
+          id?: string
+          image_url?: string | null
+          release_year?: number | null
+          review_date?: string | null
+          review_rating?: number | null
+          review_text?: string | null
+          seasons?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
