@@ -1,12 +1,13 @@
+
 import { motion } from "framer-motion";
 import { useMedia } from "@/context/MediaContext";
 import MediaCard from "@/components/MediaCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { PlusCircle, Film, Tv, BookOpen } from "lucide-react";
+import { PlusCircle, Film, Tv, BookOpen, Loader2 } from "lucide-react";
 
 const Home = () => {
-  const { movies, tvShows, books } = useMedia();
+  const { movies, tvShows, books, isLoading } = useMedia();
 
   // Get recent media across all types, sorted by added date
   const recentMedia = [...movies, ...tvShows, ...books]
@@ -87,7 +88,12 @@ const Home = () => {
             </Button>
           </div>
           
-          {recentMedia.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading your media...</p>
+            </div>
+          ) : recentMedia.length > 0 ? (
             <motion.div 
               variants={containerVariants}
               initial="hidden"

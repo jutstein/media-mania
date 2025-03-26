@@ -7,21 +7,16 @@ import MediaCard from "@/components/MediaCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, Share, Film, Tv, BookOpen } from "lucide-react";
+import { PlusCircle, Share, Film, Tv, BookOpen, Loader2 } from "lucide-react";
 import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const { user } = useAuth();
-  const { movies, tvShows, books } = useMedia();
+  const { movies, tvShows, books, isLoading } = useMedia();
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
-  const [userProfile, setUserProfile] = useState<any>(null);
   
-  // Fetch user profile from Supabase when component mounts
-  // This would typically be in a useEffect, but simplified for brevity
-
   if (!user) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
@@ -70,6 +65,17 @@ const Profile = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl">Loading your media collection...</h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
