@@ -5,7 +5,17 @@ import { MediaItem, MediaType, Season } from "@/types";
 export const generatePlaceholderImage = (title: string, type: MediaType) => {
   // This creates a consistent "random" image based on the title
   const seed = Array.from(title).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const imageIds = ["photo-1526374965328-7f61d4dc18c5", "photo-1535268647677-300dbf3d78d1", "photo-1470813740244-df37b8c1edcb"];
+  
+  // Select an appropriate base image based on media type
+  let imageIds;
+  if (type === "movie") {
+    imageIds = ["photo-1478720568477-152d9b164e26", "photo-1485846234645-a62644f84728", "photo-1440404653325-ab127d49abc1"];
+  } else if (type === "tv") {
+    imageIds = ["photo-1522869635100-9f4c5e86aa37", "photo-1593359677879-a4bb92f829d1", "photo-1593784991095-a205069470b6"];
+  } else { // books
+    imageIds = ["photo-1495446815901-a7297e633e8d", "photo-1544947950-fa07a98d237f", "photo-1512820790803-83ca734da794"];
+  }
+  
   const selectedImage = imageIds[seed % imageIds.length];
   
   return `https://images.unsplash.com/${selectedImage}?auto=format&fit=crop&w=800&q=80`;
@@ -36,3 +46,4 @@ export const transformDbItemToMediaItem = (item: any): MediaItem => ({
   } : undefined,
   seasons: item.seasons ? (item.seasons as unknown as Season[]) : undefined
 });
+

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
@@ -11,11 +11,44 @@ import { PlusCircle, Share, Film, Tv, BookOpen, Loader2 } from "lucide-react";
 import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ProfileData {
+  username: string | null;
+  avatar_url: string | null;
+}
 
 const Profile = () => {
   const { user } = useAuth();
   const { movies, tvShows, books, isLoading } = useMedia();
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  
+  // Fetch profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      setLoadingProfile(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) throw error;
+        setProfileData(data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
   
   if (!user) {
     return (
@@ -29,6 +62,9 @@ const Profile = () => {
       </div>
     );
   }
+
+  // Display username with fallbacks
+  const displayName = profileData?.username || user.email?.split('@')[0] || 'User';
 
   const mediaCount = {
     all: movies.length + tvShows.length + books.length,
@@ -66,7 +102,7 @@ const Profile = () => {
     visible: { opacity: 1, y: 0 },
   };
 
-  if (isLoading) {
+  if (isLoading || loadingProfile) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
@@ -87,12 +123,12 @@ const Profile = () => {
           className="glass-morph rounded-xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
         >
           <Avatar className="h-24 w-24 md:h-32 md:w-32">
-            <AvatarImage src="" alt={user.email || ''} />
-            <AvatarFallback className="text-2xl">{user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+            <AvatarImage src={profileData?.avatar_url || ""} alt={displayName} />
+            <AvatarFallback className="text-2xl">{displayName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
 
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{user.email}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">{displayName}</h1>
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
               <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">

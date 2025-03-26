@@ -49,7 +49,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signUp({ 
+      
+      // First create the auth user
+      const { error, data } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
@@ -58,6 +60,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (error) throw error;
+      
+      // If registration was successful and we have a user ID, update the profile
+      if (data.user && metadata?.username) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ username: metadata.username })
+          .eq('id', data.user.id);
+          
+        if (profileError) {
+          console.error("Error updating profile:", profileError);
+        }
+      }
+      
       toast.success("Registration successful! Check your email to confirm your account.");
     } catch (error: any) {
       toast.error(error.message || "An error occurred during signup");
