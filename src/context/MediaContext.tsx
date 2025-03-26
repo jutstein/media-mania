@@ -4,6 +4,7 @@ import { MediaItem, MediaType, Season } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface MediaContextType {
   movies: MediaItem[];
@@ -74,7 +75,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             text: item.review_text || '',
             date: item.review_date || new Date().toISOString().split("T")[0]
           } : undefined,
-          seasons: item.seasons
+          seasons: item.seasons ? (item.seasons as unknown as Season[]) : undefined
         }));
 
         setMedia(transformedData);
@@ -148,7 +149,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           review_rating: newItem.review?.rating,
           review_text: newItem.review?.text,
           review_date: newItem.review?.date,
-          seasons: newItem.seasons
+          seasons: newItem.seasons as unknown as Json
         });
 
       if (error) throw error;
@@ -194,7 +195,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           review_rating: updatedItem.review?.rating,
           review_text: updatedItem.review?.text,
           review_date: updatedItem.review?.date,
-          seasons: updatedItem.seasons
+          seasons: updatedItem.seasons as unknown as Json
         })
         .eq('id', id);
 
