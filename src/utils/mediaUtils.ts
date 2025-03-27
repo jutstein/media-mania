@@ -9,16 +9,43 @@ export const generatePlaceholderImage = (title: string, type: MediaType) => {
   // Select an appropriate base image based on media type
   let imageIds;
   if (type === "movie") {
-    imageIds = ["photo-1478720568477-152d9b164e26", "photo-1485846234645-a62644f84728", "photo-1440404653325-ab127d49abc1"];
+    // More cinematic movie posters
+    imageIds = [
+      "photo-1478720568477-152d9b164e26", 
+      "photo-1485846234645-a62644f84728", 
+      "photo-1440404653325-ab127d49abc1",
+      "photo-1536440136628-849c177e76a1",  // Cinema screen
+      "photo-1517604931442-7e0c8ed2963c"   // Film reel
+    ];
   } else if (type === "tv") {
-    imageIds = ["photo-1522869635100-9f4c5e86aa37", "photo-1593359677879-a4bb92f829d1", "photo-1593784991095-a205069470b6"];
+    // More TV related images
+    imageIds = [
+      "photo-1522869635100-9f4c5e86aa37", 
+      "photo-1593359677879-a4bb92f829d1", 
+      "photo-1593784991095-a205069470b6",
+      "photo-1593784991086-c8c04647eb22",  // TV studio
+      "photo-1611162617474-5b21e879e113"   // TV screen
+    ];
   } else { // books
-    imageIds = ["photo-1495446815901-a7297e633e8d", "photo-1544947950-fa07a98d237f", "photo-1512820790803-83ca734da794"];
+    // More book related images
+    imageIds = [
+      "photo-1495446815901-a7297e633e8d", 
+      "photo-1544947950-fa07a98d237f", 
+      "photo-1512820790803-83ca734da794",
+      "photo-1507842217343-583bb7270b66",  // Open book
+      "photo-1516979187457-637abb4f9353"   // Stack of books
+    ];
   }
   
-  const selectedImage = imageIds[seed % imageIds.length];
+  // Use the title to determine which image to use for consistency
+  // But also incorporate some randomness based on title
+  const selectedImage = imageIds[Math.abs(seed) % imageIds.length];
   
-  return `https://images.unsplash.com/${selectedImage}?auto=format&fit=crop&w=800&q=80`;
+  // Add some title-based coloring to make images more unique
+  const hue = Math.abs(seed) % 360;
+  const params = `?auto=format&fit=crop&w=800&q=80&sat=${(Math.abs(seed) % 50) + 30}&hue=${hue}`;
+  
+  return `https://images.unsplash.com/${selectedImage}${params}`;
 };
 
 // Calculate average rating for TV shows based on season ratings
@@ -44,6 +71,6 @@ export const transformDbItemToMediaItem = (item: any): MediaItem => ({
     text: item.review_text || '',
     date: item.review_date || new Date().toISOString().split("T")[0]
   } : undefined,
-  seasons: item.seasons ? (item.seasons as unknown as Season[]) : undefined
+  seasons: item.seasons ? (item.seasons as unknown as Season[]) : undefined,
+  originalCreatorId: item.original_creator_id
 });
-

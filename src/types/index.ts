@@ -25,6 +25,7 @@ export interface MediaItem {
   addedDate: string;
   review?: Review;
   seasons?: Season[]; // only for TV shows
+  originalCreatorId?: string; // ID of user who originally created/shared this item
 }
 
 export interface User {

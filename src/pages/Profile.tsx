@@ -1,13 +1,16 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
+import { useFollow, FollowCounts } from "@/hooks/useFollow";
 import MediaCard from "@/components/MediaCard";
+import FollowButton from "@/components/FollowButton";
+import FollowersModal from "@/components/FollowersModal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, Share, Film, Tv, BookOpen, Loader2 } from "lucide-react";
+import { PlusCircle, Share, Film, Tv, BookOpen, Loader2, Users } from "lucide-react";
 import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -19,27 +22,43 @@ interface ProfileData {
 }
 
 const Profile = () => {
+  const { userId } = useParams();
   const { user } = useAuth();
-  const { movies, tvShows, books, isLoading } = useMedia();
+  const { movies, tvShows, books, isLoading, loadMediaItems } = useMedia();
+  const { getFollowCounts } = useFollow();
+  
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [followCounts, setFollowCounts] = useState<FollowCounts>({ followers: 0, following: 0 });
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+  const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
   
-  // Fetch profile data
+  // Determine if this is the current user's profile or someone else's
+  const isCurrentUserProfile = !userId || (user && userId === user.id);
+  const displayUserId = isCurrentUserProfile ? user?.id : userId;
+  
+  // Effect to load profile data
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!displayUserId) return;
       
       setLoadingProfile(true);
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
-          .eq('id', user.id)
+          .eq('id', displayUserId)
           .single();
           
         if (error) throw error;
         setProfileData(data);
+        setProfileUserId(displayUserId);
+        
+        // Also fetch follow counts
+        const counts = await getFollowCounts(displayUserId);
+        setFollowCounts(counts);
       } catch (error) {
         console.error("Error fetching profile:", error);
       } finally {
@@ -48,9 +67,17 @@ const Profile = () => {
     };
     
     fetchProfile();
-  }, [user]);
+  }, [displayUserId, user]);
   
-  if (!user) {
+  // Effect to load media items if viewing another user's profile
+  useEffect(() => {
+    if (userId && userId !== user?.id) {
+      // We need to load this user's media items
+      loadMediaItems(userId);
+    }
+  }, [userId, user?.id]);
+  
+  if (!user && isCurrentUserProfile) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
@@ -64,7 +91,8 @@ const Profile = () => {
   }
 
   // Display username with fallbacks
-  const displayName = profileData?.username || user.email?.split('@')[0] || 'User';
+  const displayName = profileData?.username || 
+                     (isCurrentUserProfile ? user?.email?.split('@')[0] : 'User');
 
   const mediaCount = {
     all: movies.length + tvShows.length + books.length,
@@ -82,8 +110,15 @@ const Profile = () => {
     book: books,
   };
 
+  const handleOpenFollowModal = (tab: 'followers' | 'following') => {
+    setFollowModalTab(tab);
+    setIsFollowModalOpen(true);
+  };
+
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const url = window.location.origin + (isCurrentUserProfile ? 
+      `/profile/${user?.id}` : window.location.pathname);
+    navigator.clipboard.writeText(url);
     toast.success("Profile link copied to clipboard!");
   };
 
@@ -107,7 +142,7 @@ const Profile = () => {
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl">Loading your media collection...</h2>
+          <h2 className="text-xl">Loading profile...</h2>
         </div>
       </div>
     );
@@ -122,33 +157,49 @@ const Profile = () => {
           transition={{ duration: 0.5 }}
           className="glass-morph rounded-xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
         >
-          <Avatar className="h-24 w-24 md:h-32 md:w-32">
-            <AvatarImage src={profileData?.avatar_url || ""} alt={displayName} />
-            <AvatarFallback className="text-2xl">{displayName.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-24 w-24 md:h-32 md:w-32">
+              <AvatarImage src={profileData?.avatar_url || ""} alt={displayName || ""} />
+              <AvatarFallback className="text-2xl">{displayName?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+            </Avatar>
+            
+            {!isCurrentUserProfile && (
+              <div className="absolute -bottom-3 right-0">
+                <FollowButton userId={displayUserId || ""} />
+              </div>
+            )}
+          </div>
 
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{displayName}</h1>
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
+              <button 
+                onClick={() => handleOpenFollowModal('followers')}
+                className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
+              >
+                <span className="font-medium">{followCounts.followers}</span> Followers
+              </button>
+              <button 
+                onClick={() => handleOpenFollowModal('following')}
+                className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
+              >
+                <span className="font-medium">{followCounts.following}</span> Following
+              </button>
               <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">
-                <span className="font-medium">{mediaCount.movie}</span> Movies
-              </div>
-              <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">
-                <span className="font-medium">{mediaCount.tv}</span> TV Shows
-              </div>
-              <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">
-                <span className="font-medium">{mediaCount.book}</span> Books
+                <span className="font-medium">{mediaCount.all}</span> Items
               </div>
             </div>
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <Button asChild size="sm">
-                <Link to="/add">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New
-                </Link>
-              </Button>
+              {isCurrentUserProfile && (
+                <Button asChild size="sm">
+                  <Link to="/add">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add New
+                  </Link>
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleShare}>
                 <Share className="mr-2 h-4 w-4" />
                 Share Profile
@@ -209,20 +260,31 @@ const Profile = () => {
                 <div className="py-12 text-center">
                   <p className="text-muted-foreground mb-4">
                     {tab === "all"
-                      ? "Your collection is empty."
-                      : `You haven't added any ${
-                          tab === "movie" ? "movies" : tab === "tv" ? "TV shows" : "books"
-                        } yet.`}
+                      ? (isCurrentUserProfile ? "Your collection is empty." : "This user hasn't added any items yet.")
+                      : (isCurrentUserProfile 
+                          ? `You haven't added any ${tab === "movie" ? "movies" : tab === "tv" ? "TV shows" : "books"} yet.`
+                          : `This user hasn't added any ${tab === "movie" ? "movies" : tab === "tv" ? "TV shows" : "books"} yet.`)}
                   </p>
-                  <Button asChild>
-                    <Link to="/add">Add Your First Item</Link>
-                  </Button>
+                  {isCurrentUserProfile && (
+                    <Button asChild>
+                      <Link to="/add">Add Your First Item</Link>
+                    </Button>
+                  )}
                 </div>
               )}
             </TabsContent>
           ))}
         </Tabs>
       </div>
+      
+      {/* Followers/Following Modal */}
+      <FollowersModal
+        userId={profileUserId || ""}
+        username={displayName || "User"}
+        isOpen={isFollowModalOpen}
+        onOpenChange={setIsFollowModalOpen}
+        initialTab={followModalTab}
+      />
     </div>
   );
 };

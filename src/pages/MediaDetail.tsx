@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
+import { useAuth } from "@/context/AuthContext";
 import StarRating from "@/components/StarRating";
+import SharedImagePicker from "@/components/SharedImagePicker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,17 +26,21 @@ import {
   Book,
   Film,
   Tv,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { Season } from "@/types";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const MediaDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { getMediaItemById, updateMediaItem, deleteMediaItem, generateImageForTitle } = useMedia();
   
   const mediaItem = getMediaItemById(id || "");
+  const [creatorProfile, setCreatorProfile] = useState<{username: string | null} | null>(null);
   
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(mediaItem?.review?.rating || 0);
@@ -56,6 +62,28 @@ const MediaDetail = () => {
       setWatchedSeasons(mediaItem.seasons);
     }
   }, [mediaItem]);
+  
+  // Fetch original creator profile if applicable
+  useEffect(() => {
+    const fetchCreatorProfile = async () => {
+      if (mediaItem?.originalCreatorId) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', mediaItem.originalCreatorId)
+            .single();
+            
+          if (error) throw error;
+          setCreatorProfile(data);
+        } catch (error) {
+          console.error("Error fetching creator profile:", error);
+        }
+      }
+    };
+    
+    fetchCreatorProfile();
+  }, [mediaItem?.originalCreatorId]);
 
   if (!mediaItem) {
     return null;
@@ -112,6 +140,14 @@ const MediaDetail = () => {
     } finally {
       setIsGeneratingImage(false);
     }
+  };
+
+  const handleSelectSharedImage = (imageUrl: string) => {
+    updateMediaItem(mediaItem.id, { 
+      imageUrl,
+      originalCreatorId: mediaItem.originalCreatorId || user?.id
+    });
+    toast.success("Image updated successfully!");
   };
 
   const handleShare = () => {
@@ -175,9 +211,41 @@ const MediaDetail = () => {
                   >
                     {isGeneratingImage ? "Generating..." : "Generate Image"}
                   </Button>
+                  
+                  <SharedImagePicker 
+                    title={mediaItem.title}
+                    type={mediaItem.type}
+                    onSelect={handleSelectSharedImage}
+                  />
                 </div>
               )}
             </div>
+            
+            {mediaItem.imageUrl && (
+              <div className="mb-4 flex flex-col space-y-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                >
+                  {isGeneratingImage ? "Generating..." : "Generate New Image"}
+                </Button>
+                
+                <SharedImagePicker 
+                  title={mediaItem.title}
+                  type={mediaItem.type}
+                  onSelect={handleSelectSharedImage}
+                />
+              </div>
+            )}
+            
+            {creatorProfile && mediaItem.originalCreatorId !== user?.id && (
+              <div className="mb-4 text-sm text-muted-foreground text-center bg-secondary/20 rounded-md p-2">
+                <User className="h-4 w-4 inline-block mr-1" />
+                Image added by {creatorProfile.username || "another user"}
+              </div>
+            )}
 
             <div className="flex flex-col space-y-3">
               <Button onClick={() => setIsEditing(!isEditing)}>

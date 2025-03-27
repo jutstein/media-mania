@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
 import { calculateAverageRating, transformDbItemToMediaItem } from "@/utils/mediaUtils";
+import { useImageGeneration } from "./useImageGeneration";
 
 export const useMediaCrud = (
   userId: string | undefined,
@@ -12,6 +13,7 @@ export const useMediaCrud = (
   media: MediaItem[]
 ) => {
   const [isLoading, setIsLoading] = useState(true);
+  const { addSharedImage } = useImageGeneration();
 
   const loadMediaItems = async () => {
     if (!userId) {
@@ -67,6 +69,12 @@ export const useMediaCrud = (
     }
     
     try {
+      // If this item has an image and it's not from the placeholder generator
+      // add it to shared images
+      if (newItem.imageUrl && userId && !newItem.imageUrl.includes('?')) {
+        await addSharedImage(newItem.title, newItem.type, newItem.imageUrl, userId);
+      }
+      
       // Save to Supabase
       const { error } = await supabase
         .from('media_items')
@@ -81,7 +89,8 @@ export const useMediaCrud = (
           review_rating: newItem.review?.rating,
           review_text: newItem.review?.text,
           review_date: newItem.review?.date,
-          seasons: newItem.seasons as unknown as Json
+          seasons: newItem.seasons as unknown as Json,
+          original_creator_id: newItem.originalCreatorId || null
         });
 
       if (error) throw error;
@@ -120,6 +129,14 @@ export const useMediaCrud = (
         }
       }
       
+      // If the image URL has changed and it's not a placeholder
+      if (updates.imageUrl && 
+          updates.imageUrl !== existingItem.imageUrl && 
+          userId && 
+          !updates.imageUrl.includes('?')) {
+        await addSharedImage(updatedItem.title, updatedItem.type, updates.imageUrl, userId);
+      }
+      
       // Update in Supabase
       const { error } = await supabase
         .from('media_items')
@@ -132,7 +149,8 @@ export const useMediaCrud = (
           review_rating: updatedItem.review?.rating,
           review_text: updatedItem.review?.text,
           review_date: updatedItem.review?.date,
-          seasons: updatedItem.seasons as unknown as Json
+          seasons: updatedItem.seasons as unknown as Json,
+          original_creator_id: updatedItem.originalCreatorId
         })
         .eq('id', id);
 

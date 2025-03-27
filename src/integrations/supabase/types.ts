@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       media_items: {
         Row: {
           added_date: string
@@ -16,6 +37,7 @@ export type Database = {
           creator: string | null
           id: string
           image_url: string | null
+          original_creator_id: string | null
           release_year: number | null
           review_date: string | null
           review_rating: number | null
@@ -31,6 +53,7 @@ export type Database = {
           creator?: string | null
           id?: string
           image_url?: string | null
+          original_creator_id?: string | null
           release_year?: number | null
           review_date?: string | null
           review_rating?: number | null
@@ -46,6 +69,7 @@ export type Database = {
           creator?: string | null
           id?: string
           image_url?: string | null
+          original_creator_id?: string | null
           release_year?: number | null
           review_date?: string | null
           review_rating?: number | null
@@ -81,6 +105,36 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      shared_media_images: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          image_url: string
+          title: string
+          type: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          image_url: string
+          title: string
+          type: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          image_url?: string
+          title?: string
+          type?: string
+          use_count?: number
         }
         Relationships: []
       }

@@ -35,9 +35,12 @@ const App = () => (
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/profile" element={<Profile />} />
                 <Route path="/add" element={<AddMedia />} />
               </Route>
+              
+              {/* Profile routes - own profile and other users' profiles */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:userId" element={<Profile />} />
               
               <Route path="/media/:id" element={<MediaDetail />} />
               <Route path="/movies" element={<CategoryPage />} />
