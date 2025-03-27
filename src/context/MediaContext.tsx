@@ -17,6 +17,7 @@ interface MediaContextType {
   getUserMediaItems: (userId: string) => MediaItem[];
   generateImageForTitle: (title: string, type: MediaType) => Promise<string>;
   isLoading: boolean;
+  loadMediaItems: (userId?: string) => Promise<void>;
 }
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
@@ -67,7 +68,8 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         getMediaItemsByType,
         getUserMediaItems,
         generateImageForTitle,
-        isLoading
+        isLoading,
+        loadMediaItems
       }}
     >
       {children}

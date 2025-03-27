@@ -55,7 +55,7 @@ export const useImageGeneration = () => {
             type,
             image_url: imageUrl,
             creator_id: creatorId
-          });
+          } as any);
           
         if (insertError) throw insertError;
       }
@@ -72,7 +72,7 @@ export const useImageGeneration = () => {
     try {
       const { error } = await supabase
         .from('shared_media_images')
-        .update({ use_count: supabase.rpc('increment', { count: 1 }) })
+        .update({ use_count: supabase.rpc('increment', { count: 1 }) as any })
         .eq('id', imageId);
         
       if (error) throw error;

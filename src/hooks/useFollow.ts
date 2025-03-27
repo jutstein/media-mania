@@ -24,7 +24,7 @@ export const useFollow = () => {
       const { data, error } = await supabase
         .from('follows')
         .select('id')
-        .eq('follower_id', supabase.auth.getUser()?.data?.user?.id || '')
+        .eq('follower_id', (await supabase.auth.getUser()).data.user?.id || '')
         .eq('following_id', targetUserId)
         .single();
       
@@ -72,7 +72,7 @@ export const useFollow = () => {
   const followUser = async (targetUserId: string) => {
     setIsLoading(true);
     try {
-      const currentUser = supabase.auth.getUser()?.data?.user;
+      const currentUser = (await supabase.auth.getUser()).data.user;
       if (!currentUser) {
         toast.error('You need to be logged in to follow users');
         return false;
@@ -89,7 +89,7 @@ export const useFollow = () => {
         .insert({
           follower_id: currentUser.id,
           following_id: targetUserId
-        });
+        } as any);
       
       if (error) {
         // If unique constraint violation, user is already following
@@ -115,7 +115,7 @@ export const useFollow = () => {
   const unfollowUser = async (targetUserId: string) => {
     setIsLoading(true);
     try {
-      const currentUser = supabase.auth.getUser()?.data?.user;
+      const currentUser = (await supabase.auth.getUser()).data.user;
       if (!currentUser) {
         toast.error('You need to be logged in to unfollow users');
         return false;
@@ -143,7 +143,7 @@ export const useFollow = () => {
   // Get followers or following list
   const getFollowList = async (userId: string, type: 'followers' | 'following'): Promise<ProfileWithFollow[]> => {
     try {
-      const currentUserId = supabase.auth.getUser()?.data?.user?.id;
+      const currentUserId = (await supabase.auth.getUser()).data.user?.id;
       let query;
       
       if (type === 'followers') {
@@ -180,7 +180,7 @@ export const useFollow = () => {
       if (!data || data.length === 0) return [];
       
       // Transform data to ProfileWithFollow format
-      const profiles = await Promise.all(data.map(async (item) => {
+      const profiles = await Promise.all(data.map(async (item: any) => {
         const profile = type === 'followers' 
           ? item.profiles 
           : item.profiles;
