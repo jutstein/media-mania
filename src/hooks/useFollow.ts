@@ -1,71 +1,22 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FollowCounts, ProfileWithFollow } from '@/types/follow';
+import * as followService from '@/services/followService';
 
-export interface FollowCounts {
-  followers: number;
-  following: number;
-}
-
-export interface ProfileWithFollow {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-  isFollowing: boolean;
-}
+export { FollowCounts, ProfileWithFollow };
 
 export const useFollow = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Check if current user is following another user
   const checkIsFollowing = async (targetUserId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', (await supabase.auth.getUser()).data.user?.id || '')
-        .eq('following_id', targetUserId)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') { // Not found error
-        throw error;
-      }
-      
-      return !!data;
-    } catch (error) {
-      console.error('Error checking follow status:', error);
-      return false;
-    }
+    return followService.checkIsFollowing(targetUserId);
   };
   
   // Get follow counts for a user
   const getFollowCounts = async (userId: string): Promise<FollowCounts> => {
-    try {
-      // Get followers count
-      const { count: followersCount, error: followersError } = await supabase
-        .from('follows')
-        .select('id', { count: 'exact', head: true })
-        .eq('following_id', userId);
-      
-      if (followersError) throw followersError;
-      
-      // Get following count
-      const { count: followingCount, error: followingError } = await supabase
-        .from('follows')
-        .select('id', { count: 'exact', head: true })
-        .eq('follower_id', userId);
-      
-      if (followingError) throw followingError;
-      
-      return {
-        followers: followersCount || 0,
-        following: followingCount || 0
-      };
-    } catch (error) {
-      console.error('Error getting follow counts:', error);
-      return { followers: 0, following: 0 };
-    }
+    return followService.getFollowCounts(userId);
   };
   
   // Follow a user
@@ -84,12 +35,7 @@ export const useFollow = () => {
         return false;
       }
       
-      const { error } = await supabase
-        .from('follows')
-        .insert({
-          follower_id: currentUser.id,
-          following_id: targetUserId
-        } as any);
+      const { error } = await followService.createFollow(currentUser.id, targetUserId);
       
       if (error) {
         // If unique constraint violation, user is already following
@@ -121,11 +67,7 @@ export const useFollow = () => {
         return false;
       }
       
-      const { error } = await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', currentUser.id)
-        .eq('following_id', targetUserId);
+      const { error } = await followService.deleteFollow(currentUser.id, targetUserId);
       
       if (error) throw error;
       
@@ -143,66 +85,13 @@ export const useFollow = () => {
   // Get followers or following list
   const getFollowList = async (userId: string, type: 'followers' | 'following'): Promise<ProfileWithFollow[]> => {
     try {
-      const currentUserId = (await supabase.auth.getUser()).data.user?.id;
-      let query;
+      const { data, error } = await followService.fetchFollowList(userId, type);
       
-      if (type === 'followers') {
-        // Get users who follow the specified user
-        query = supabase
-          .from('follows')
-          .select(`
-            follower_id,
-            profiles!follows_follower_id_fkey (
-              id,
-              username,
-              avatar_url
-            )
-          `)
-          .eq('following_id', userId);
-      } else {
-        // Get users whom the specified user follows
-        query = supabase
-          .from('follows')
-          .select(`
-            following_id,
-            profiles!follows_following_id_fkey (
-              id,
-              username,
-              avatar_url
-            )
-          `)
-          .eq('follower_id', userId);
-      }
-      
-      const { data, error } = await query;
       if (error) throw error;
       
       if (!data || data.length === 0) return [];
       
-      // Transform data to ProfileWithFollow format
-      const profiles = await Promise.all(data.map(async (item: any) => {
-        const profile = type === 'followers' 
-          ? item.profiles 
-          : item.profiles;
-          
-        const profileId = type === 'followers' 
-          ? item.follower_id 
-          : item.following_id;
-          
-        let isFollowing = false;
-        if (currentUserId) {
-          isFollowing = await checkIsFollowing(profileId);
-        }
-        
-        return {
-          id: profileId,
-          username: profile.username,
-          avatar_url: profile.avatar_url,
-          isFollowing
-        };
-      }));
-      
-      return profiles;
+      return followService.transformFollowData(data, type);
     } catch (error) {
       console.error(`Error getting ${type}:`, error);
       return [];
@@ -218,3 +107,6 @@ export const useFollow = () => {
     getFollowList
   };
 };
+
+// Import supabase client inside the hook to avoid missing import
+import { supabase } from '@/integrations/supabase/client';
