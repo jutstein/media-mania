@@ -1,10 +1,10 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { FollowCounts, ProfileWithFollow } from '@/types/follow';
+import type { FollowCounts, ProfileWithFollow } from '@/types/follow';
 import * as followService from '@/services/followService';
 
-export { FollowCounts, ProfileWithFollow };
+export type { FollowCounts, ProfileWithFollow };
 
 export const useFollow = () => {
   const [isLoading, setIsLoading] = useState(false);

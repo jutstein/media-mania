@@ -3,18 +3,14 @@ import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
-import { useFollow, FollowCounts } from "@/hooks/useFollow";
-import MediaCard from "@/components/MediaCard";
-import FollowButton from "@/components/FollowButton";
-import FollowersModal from "@/components/FollowersModal";
+import { useFollow } from "@/hooks/useFollow";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, Share, Film, Tv, BookOpen, Loader2, Users } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { MediaType } from "@/types";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import ProfileMediaTabs from "@/components/profile/ProfileMediaTabs";
+import FollowersModal from "@/components/FollowersModal";
 
 interface ProfileData {
   username: string | null;
@@ -115,28 +111,6 @@ const Profile = () => {
     setIsFollowModalOpen(true);
   };
 
-  const handleShare = () => {
-    const url = window.location.origin + (isCurrentUserProfile ? 
-      `/profile/${user?.id}` : window.location.pathname);
-    navigator.clipboard.writeText(url);
-    toast.success("Profile link copied to clipboard!");
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
   if (isLoading || loadingProfile) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
@@ -151,130 +125,23 @@ const Profile = () => {
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
       <div className="container mx-auto max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="glass-morph rounded-xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
-        >
-          <div className="relative">
-            <Avatar className="h-24 w-24 md:h-32 md:w-32">
-              <AvatarImage src={profileData?.avatar_url || ""} alt={displayName || ""} />
-              <AvatarFallback className="text-2xl">{displayName?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-            </Avatar>
-            
-            {!isCurrentUserProfile && (
-              <div className="absolute -bottom-3 right-0">
-                <FollowButton userId={displayUserId || ""} />
-              </div>
-            )}
-          </div>
+        <ProfileHeader 
+          profileData={profileData}
+          displayName={displayName || "User"}
+          displayUserId={displayUserId}
+          isCurrentUserProfile={isCurrentUserProfile}
+          followCounts={followCounts}
+          mediaCount={mediaCount.all}
+          onOpenFollowModal={handleOpenFollowModal}
+        />
 
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{displayName}</h1>
-            
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
-              <button 
-                onClick={() => handleOpenFollowModal('followers')}
-                className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
-              >
-                <span className="font-medium">{followCounts.followers}</span> Followers
-              </button>
-              <button 
-                onClick={() => handleOpenFollowModal('following')}
-                className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
-              >
-                <span className="font-medium">{followCounts.following}</span> Following
-              </button>
-              <div className="bg-secondary rounded-full px-3 py-1 text-sm text-muted-foreground">
-                <span className="font-medium">{mediaCount.all}</span> Items
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              {isCurrentUserProfile && (
-                <Button asChild size="sm">
-                  <Link to="/add">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New
-                  </Link>
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share className="mr-2 h-4 w-4" />
-                Share Profile
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-
-        <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as MediaType | "all")}>
-          <div className="flex justify-between items-center mb-6">
-            <TabsList>
-              <TabsTrigger value="all" className="flex items-center gap-1.5">
-                All
-                <span className="ml-1 text-xs bg-secondary/80 px-1.5 rounded-full">
-                  {mediaCount.all}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="movie" className="flex items-center gap-1.5">
-                <Film className="h-4 w-4" />
-                Movies
-                <span className="ml-1 text-xs bg-secondary/80 px-1.5 rounded-full">
-                  {mediaCount.movie}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="tv" className="flex items-center gap-1.5">
-                <Tv className="h-4 w-4" />
-                TV Shows
-                <span className="ml-1 text-xs bg-secondary/80 px-1.5 rounded-full">
-                  {mediaCount.tv}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="book" className="flex items-center gap-1.5">
-                <BookOpen className="h-4 w-4" />
-                Books
-                <span className="ml-1 text-xs bg-secondary/80 px-1.5 rounded-full">
-                  {mediaCount.book}
-                </span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {Object.entries(filteredMedia).map(([tab, items]) => (
-            <TabsContent key={tab} value={tab} className="mt-0">
-              {items.length > 0 ? (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
-                >
-                  {items.map((item) => (
-                    <motion.div key={item.id} variants={itemVariants}>
-                      <MediaCard item={item} />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              ) : (
-                <div className="py-12 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    {tab === "all"
-                      ? (isCurrentUserProfile ? "Your collection is empty." : "This user hasn't added any items yet.")
-                      : (isCurrentUserProfile 
-                          ? `You haven't added any ${tab === "movie" ? "movies" : tab === "tv" ? "TV shows" : "books"} yet.`
-                          : `This user hasn't added any ${tab === "movie" ? "movies" : tab === "tv" ? "TV shows" : "books"} yet.`)}
-                  </p>
-                  {isCurrentUserProfile && (
-                    <Button asChild>
-                      <Link to="/add">Add Your First Item</Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+        <ProfileMediaTabs 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          mediaCount={mediaCount}
+          filteredMedia={filteredMedia}
+          isCurrentUserProfile={isCurrentUserProfile}
+        />
       </div>
       
       {/* Followers/Following Modal */}
