@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileMediaTabs from "@/components/profile/ProfileMediaTabs";
 import FollowersModal from "@/components/FollowersModal";
+import type { FollowCounts } from "@/types/follow";
 
 interface ProfileData {
   username: string | null;
