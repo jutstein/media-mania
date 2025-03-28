@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // Pages
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import AddMedia from "./pages/AddMedia";
 import MediaDetail from "./pages/MediaDetail";
 import CategoryPage from "./pages/CategoryPage";
@@ -36,6 +37,7 @@ const App = () => (
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/add" element={<AddMedia />} />
+                <Route path="/profile/edit" element={<EditProfile />} />
               </Route>
               
               {/* Profile routes - own profile and other users' profiles */}

@@ -5,7 +5,7 @@ import { useFollow, FollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlusCircle, Share } from "lucide-react";
+import { PlusCircle, Share, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -81,12 +81,20 @@ const ProfileHeader = ({
         
         <div className="flex flex-wrap gap-3 justify-center md:justify-start">
           {isCurrentUserProfile && (
-            <Button asChild size="sm">
-              <Link to="/add">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add New
-              </Link>
-            </Button>
+            <>
+              <Button asChild size="sm">
+                <Link to="/add">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/profile/edit">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+            </>
           )}
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share className="mr-2 h-4 w-4" />
