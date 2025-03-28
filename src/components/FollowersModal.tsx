@@ -137,7 +137,7 @@ const FollowersModal = ({
               
             return {
               id: profile.id,
-              username: profile.username,
+              username: profile.username || "No username",
               avatar_url: profile.avatar_url,
               isFollowing: !!data
             };
@@ -269,7 +269,7 @@ const FollowersModal = ({
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{profile.username || "User"}</p>
+                <p className="font-medium">{profile.username || "No Username"}</p>
               </div>
             </Link>
             

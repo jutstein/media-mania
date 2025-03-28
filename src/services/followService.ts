@@ -161,7 +161,7 @@ export async function transformFollowData(data: any[], type: 'followers' | 'foll
     
     return {
       id: profileId,
-      username: profile.username,
+      username: profile.username || "No Username", // Ensure there's always a username
       avatar_url: profile.avatar_url,
       isFollowing
     };
