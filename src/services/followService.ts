@@ -81,41 +81,63 @@ export async function deleteFollow(followerId: string, targetUserId: string) {
 
 export async function fetchFollowList(userId: string, type: 'followers' | 'following') {
   try {
-    let query;
-    
     if (type === 'followers') {
-      // Get users who follow the specified user
-      query = supabase
+      // Get users who follow the specified user - use two separate queries instead of joins
+      const { data: followsData, error: followsError } = await supabase
         .from('follows')
-        .select(`
-          follower_id,
-          profiles!follows_follower_id_fkey (
-            id,
-            username,
-            avatar_url
-          )
-        `)
+        .select('follower_id')
         .eq('following_id', userId);
+      
+      if (followsError) throw followsError;
+      if (!followsData || followsData.length === 0) return { data: [], error: null };
+      
+      const followerIds = followsData.map(item => item.follower_id);
+      
+      // Now get the profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', followerIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Combine the data
+      const data = profilesData.map(profile => ({
+        follower_id: profile.id,
+        profiles: profile
+      }));
+      
+      return { data, error: null };
     } else {
-      // Get users whom the specified user follows
-      query = supabase
+      // Get users whom the specified user follows - use two separate queries
+      const { data: followsData, error: followsError } = await supabase
         .from('follows')
-        .select(`
-          following_id,
-          profiles!follows_following_id_fkey (
-            id,
-            username,
-            avatar_url
-          )
-        `)
+        .select('following_id')
         .eq('follower_id', userId);
+      
+      if (followsError) throw followsError;
+      if (!followsData || followsData.length === 0) return { data: [], error: null };
+      
+      const followingIds = followsData.map(item => item.following_id);
+      
+      // Now get the profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', followingIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Combine the data
+      const data = profilesData.map(profile => ({
+        following_id: profile.id,
+        profiles: profile
+      }));
+      
+      return { data, error: null };
     }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    
-    return { data, error: null };
   } catch (error) {
+    console.error(`Error in fetchFollowList (${type}):`, error);
     return { data: null, error };
   }
 }
@@ -127,10 +149,7 @@ export async function transformFollowData(data: any[], type: 'followers' | 'foll
   
   // Transform data to ProfileWithFollow format
   const profiles = await Promise.all(data.map(async (item: any) => {
-    const profile = type === 'followers' 
-      ? item.profiles 
-      : item.profiles;
-      
+    const profile = item.profiles;
     const profileId = type === 'followers' 
       ? item.follower_id 
       : item.following_id;

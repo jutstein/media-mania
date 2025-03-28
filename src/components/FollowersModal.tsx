@@ -124,21 +124,22 @@ const FollowersModal = ({
       if (profiles && profiles.length > 0 && user) {
         // Check if current user is following these profiles
         const currentUser = user;
+        
+        // For each profile, check if the user is following them
         const profilesWithFollow = await Promise.all(
           profiles.map(async (profile) => {
-            const isFollowing = await supabase
+            const { data } = await supabase
               .from('follows')
               .select('id')
               .eq('follower_id', currentUser.id)
               .eq('following_id', profile.id)
-              .maybeSingle()
-              .then(({ data }) => !!data);
-
+              .maybeSingle();
+              
             return {
               id: profile.id,
               username: profile.username,
               avatar_url: profile.avatar_url,
-              isFollowing
+              isFollowing: !!data
             };
           })
         );
