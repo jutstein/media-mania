@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Film, Tv, User, LogOut, Search, LogIn } from "lucide-react";
@@ -51,6 +52,14 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Reset search when popover closes
+  useEffect(() => {
+    if (!isSearchOpen) {
+      setQuery("");
+      setSearchResults([]);
+    }
+  }, [isSearchOpen]);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -151,11 +160,12 @@ const Navbar = () => {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
-              <Command>
+              <Command shouldFilter={false}>
                 <CommandInput
                   placeholder="Search users..."
                   value={query}
                   onValueChange={handleSearch}
+                  autoFocus
                 />
                 <CommandList>
                   {query.trim() !== "" && (
@@ -175,6 +185,7 @@ const Navbar = () => {
                                   key={profile.id}
                                   onSelect={() => handleSelectUser(profile.id)}
                                   className="cursor-pointer"
+                                  value={profile.username || profile.id}
                                 >
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
