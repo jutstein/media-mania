@@ -1,5 +1,5 @@
 
-import { useParams, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import MediaCard from "@/components/MediaCard";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,15 @@ import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 
 const CategoryPage = () => {
-  const { category } = useParams<{ category: string }>();
+  const location = useLocation();
   const { movies, tvShows, books } = useMedia();
+  
+  // Get category from path
+  const path = location.pathname;
+  const category = path.split('/')[1]; // This will extract 'movies', 'tv-shows', or 'books' from the URL
+  
+  console.log("Path:", path);
+  console.log("Extracted category:", category);
 
   // Map category from URL to media type
   let mediaType: MediaType = "movie";
