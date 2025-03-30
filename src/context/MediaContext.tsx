@@ -10,7 +10,7 @@ interface MediaContextType {
   tvShows: MediaItem[];
   books: MediaItem[];
   addMediaItem: (item: Omit<MediaItem, "id" | "addedDate">) => Promise<void>;
-  updateMediaItem: (id: string, item: Partial<MediaItem>) => Promise<void>;
+  updateMediaItem: (id: string, item: Partial<MediaItem>) => Promise<string | undefined>;
   deleteMediaItem: (id: string) => Promise<void>;
   getMediaItemById: (id: string) => MediaItem | undefined;
   getMediaItemsByType: (type: MediaType) => MediaItem[];
