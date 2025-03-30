@@ -34,12 +34,13 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteMediaItem 
   } = useMediaCrud(user?.id, setMedia, media);
 
+  // Correctly filter the media items by type
   const movies = media.filter((item) => item.type === "movie");
   const tvShows = media.filter((item) => item.type === "tv");
   const books = media.filter((item) => item.type === "book");
 
-  // Load media items from Supabase when user changes
   useEffect(() => {
+    console.log("MediaContext - Loading media items for user:", user?.id);
     loadMediaItems();
   }, [user]);
 

@@ -29,6 +29,13 @@ const CategoryPage = () => {
     items = books;
   }
 
+  console.log("Category:", category);
+  console.log("Media type:", mediaType);
+  console.log("Items count:", items.length);
+  console.log("Movies count:", movies.length);
+  console.log("TV shows count:", tvShows.length);
+  console.log("Books count:", books.length);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
