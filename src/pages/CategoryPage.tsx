@@ -17,6 +17,7 @@ const CategoryPage = () => {
   let icon = <Film className="h-6 w-6 mb-1" />;
   let items = movies;
 
+  // Handle different URL paths
   if (category === "tv-shows") {
     mediaType = "tv";
     pageTitle = "TV Shows";
@@ -27,6 +28,10 @@ const CategoryPage = () => {
     pageTitle = "Books";
     icon = <BookOpen className="h-6 w-6 mb-1" />;
     items = books;
+  } else {
+    // Default to movies if no category matched
+    mediaType = "movie";
+    items = movies;
   }
 
   console.log("Category:", category);
