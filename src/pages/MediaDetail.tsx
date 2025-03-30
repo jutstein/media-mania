@@ -29,7 +29,8 @@ import {
   Tv,
   User,
   Plus,
-  Minus
+  Minus,
+  ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { Season, MediaType } from "@/types";
@@ -59,9 +60,11 @@ const MediaDetail = () => {
   const [editCreator, setEditCreator] = useState(mediaItem?.creator || "");
   const [editReleaseYear, setEditReleaseYear] = useState(mediaItem?.releaseYear?.toString() || "");
   const [editType, setEditType] = useState<MediaType>(mediaItem?.type || "movie");
+  const [editImageUrl, setEditImageUrl] = useState(mediaItem?.imageUrl || "");
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
 
   useEffect(() => {
     if (!mediaItem) {
@@ -79,6 +82,7 @@ const MediaDetail = () => {
       setEditCreator(mediaItem.creator || "");
       setEditReleaseYear(mediaItem.releaseYear?.toString() || "");
       setEditType(mediaItem.type);
+      setEditImageUrl(mediaItem.imageUrl || "");
       setRating(mediaItem.review?.rating || 0);
       setReviewText(mediaItem.review?.text || "");
     }
@@ -131,8 +135,10 @@ const MediaDetail = () => {
       creator: editCreator || undefined,
       releaseYear: releaseYear,
       type: editType,
+      imageUrl: editImageUrl,
     });
     setIsEditingDetails(false);
+    setIsEditingImage(false);
   };
 
   const handleDelete = () => {
@@ -177,6 +183,7 @@ const MediaDetail = () => {
     try {
       const imageUrl = await generateImageForTitle(mediaItem.title, mediaItem.type);
       updateMediaItem(mediaItem.id, { imageUrl });
+      setEditImageUrl(imageUrl);
       toast.success("Image generated successfully!");
     } catch (error) {
       console.error("Failed to generate image:", error);
@@ -191,6 +198,7 @@ const MediaDetail = () => {
       imageUrl,
       originalCreatorId: mediaItem.originalCreatorId || user?.id
     });
+    setEditImageUrl(imageUrl);
     toast.success("Image updated successfully!");
   };
 
@@ -235,52 +243,104 @@ const MediaDetail = () => {
             transition={{ duration: 0.5 }}
             className="md:col-span-1 flex flex-col"
           >
-            <div className="aspect-[2/3] rounded-xl overflow-hidden glass-morph p-1 mb-4">
-              {mediaItem.imageUrl ? (
-                <img
-                  src={mediaItem.imageUrl}
-                  alt={mediaItem.title}
-                  className="h-full w-full object-cover rounded-lg"
-                />
-              ) : (
-                <div className="h-full w-full bg-muted flex flex-col items-center justify-center rounded-lg text-center p-4">
-                  {iconMap[mediaItem.type]}
-                  <p className="mt-4 text-sm text-muted-foreground">No image available</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={handleGenerateImage}
-                    disabled={isGeneratingImage}
-                  >
-                    {isGeneratingImage ? "Generating..." : "Generate Image"}
-                  </Button>
+            {isEditingImage ? (
+              <div className="glass-morph rounded-xl p-6 mb-4">
+                <h3 className="text-lg font-semibold mb-4">Edit Image</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="image-url">Image URL</Label>
+                    <Input
+                      id="image-url"
+                      value={editImageUrl}
+                      onChange={(e) => setEditImageUrl(e.target.value)}
+                      placeholder="Enter image URL"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage}
+                    >
+                      {isGeneratingImage ? "Generating..." : "Generate New Image"}
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setEditImageUrl("")}
+                    >
+                      Clear
+                    </Button>
+                  </div>
                   
                   <SharedImagePicker 
                     title={mediaItem.title}
                     type={mediaItem.type}
                     onSelect={handleSelectSharedImage}
                   />
+                  
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setEditImageUrl(mediaItem.imageUrl || "");
+                        setIsEditingImage(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveDetails}>
+                      Save Changes
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="aspect-[2/3] rounded-xl overflow-hidden glass-morph p-1 mb-4">
+                {editImageUrl ? (
+                  <img
+                    src={editImageUrl}
+                    alt={mediaItem.title}
+                    className="h-full w-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-muted flex flex-col items-center justify-center rounded-lg text-center p-4">
+                    {iconMap[mediaItem.type]}
+                    <p className="mt-4 text-sm text-muted-foreground">No image available</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage}
+                    >
+                      {isGeneratingImage ? "Generating..." : "Generate Image"}
+                    </Button>
+                    
+                    <SharedImagePicker 
+                      title={mediaItem.title}
+                      type={mediaItem.type}
+                      onSelect={handleSelectSharedImage}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             
-            {mediaItem.imageUrl && (
+            {editImageUrl && !isEditingImage && (
               <div className="mb-4 flex flex-col space-y-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={handleGenerateImage}
-                  disabled={isGeneratingImage}
+                  onClick={() => setIsEditingImage(true)}
                 >
-                  {isGeneratingImage ? "Generating..." : "Generate New Image"}
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Change Image
                 </Button>
-                
-                <SharedImagePicker 
-                  title={mediaItem.title}
-                  type={mediaItem.type}
-                  onSelect={handleSelectSharedImage}
-                />
               </div>
             )}
             
