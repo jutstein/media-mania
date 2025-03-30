@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, Film, Tv, User, LogOut, Search, LogIn, X } from "lucide-react";
+import { BookOpen, Film, Tv, User, LogOut, Search, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,16 +82,22 @@ const Navbar = () => {
       setSearchResults(data || []);
     } catch (err) {
       console.error("Error searching for users:", err);
+      setSearchResults([]); // Ensure searchResults is always an array
     } finally {
       setIsLoading(false);
     }
   };
   
   const handleSelectUser = (userId: string) => {
-    navigate(`/profile/${userId}`);
+    // Close the popover before navigating to prevent any state issues
     setIsSearchOpen(false);
+    // Reset search state
     setQuery("");
     setSearchResults([]);
+    // Navigate after a small delay to ensure state is cleared
+    setTimeout(() => {
+      navigate(`/profile/${userId}`);
+    }, 0);
   };
 
   return (
@@ -153,38 +157,43 @@ const Navbar = () => {
                   value={query}
                   onValueChange={handleSearch}
                 />
-                {query && (
-                  <CommandList>
-                    {isLoading ? (
-                      <div className="py-6 text-center">
-                        <p className="text-sm text-muted-foreground">Searching...</p>
-                      </div>
-                    ) : (
-                      <>
-                        <CommandEmpty>No users found</CommandEmpty>
-                        <CommandGroup heading="Users">
-                          {searchResults.map((profile) => (
-                            <CommandItem
-                              key={profile.id}
-                              onSelect={() => handleSelectUser(profile.id)}
-                              className="cursor-pointer"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={profile.avatar_url || ""} />
-                                  <AvatarFallback>
-                                    {profile.username?.charAt(0).toUpperCase() || "U"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span>{profile.username || "User"}</span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </>
-                    )}
-                  </CommandList>
-                )}
+                <CommandList>
+                  {query.trim() !== "" && (
+                    <>
+                      {isLoading ? (
+                        <div className="py-6 text-center">
+                          <p className="text-sm text-muted-foreground">Searching...</p>
+                        </div>
+                      ) : (
+                        <>
+                          {searchResults.length === 0 ? (
+                            <CommandEmpty>No users found</CommandEmpty>
+                          ) : (
+                            <CommandGroup heading="Users">
+                              {searchResults.map((profile) => (
+                                <CommandItem
+                                  key={profile.id}
+                                  onSelect={() => handleSelectUser(profile.id)}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarImage src={profile.avatar_url || ""} />
+                                      <AvatarFallback>
+                                        {profile.username?.charAt(0).toUpperCase() || "U"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>{profile.username || "User"}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
