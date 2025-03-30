@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
@@ -6,11 +5,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useFollow } from "@/hooks/useFollow";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { MediaType } from "@/types";
+import { MediaType, Season } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileMediaTabs from "@/components/profile/ProfileMediaTabs";
 import FollowersModal from "@/components/FollowersModal";
+import { transformDbItemToMediaItem } from "@/utils/mediaUtils";
 import type { FollowCounts } from "@/types/follow";
 import { MediaItem } from "@/types";
 
@@ -64,24 +64,8 @@ const Profile = () => {
         if (error) throw error;
         
         if (data) {
-          const transformedData = data.map((item) => ({
-            id: item.id,
-            title: item.title,
-            type: item.type as MediaType,
-            imageUrl: item.image_url,
-            creator: item.creator,
-            releaseYear: item.release_year,
-            addedDate: item.added_date,
-            review: item.review_rating || item.review_text 
-              ? {
-                  rating: item.review_rating || 0,
-                  text: item.review_text || '',
-                  date: item.review_date || new Date().toISOString().split('T')[0],
-                }
-              : undefined,
-            seasons: item.seasons,
-            originalCreatorId: item.original_creator_id,
-          }));
+          // Use the utility function to transform database items to MediaItem type
+          const transformedData = data.map(item => transformDbItemToMediaItem(item));
           
           const movies = transformedData.filter(item => item.type === 'movie');
           const tvShows = transformedData.filter(item => item.type === 'tv');

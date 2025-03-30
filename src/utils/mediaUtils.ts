@@ -1,5 +1,6 @@
 
 import { MediaItem, MediaType, Season } from "@/types";
+import { Json } from "@/integrations/supabase/types";
 
 // Function to generate a placeholder image URL based on title and type
 export const generatePlaceholderImage = (title: string, type: MediaType) => {
@@ -71,6 +72,7 @@ export const transformDbItemToMediaItem = (item: any): MediaItem => ({
     text: item.review_text || '',
     date: item.review_date || new Date().toISOString().split("T")[0]
   } : undefined,
-  seasons: item.seasons ? (item.seasons as unknown as Season[]) : undefined,
+  seasons: item.seasons ? (item.seasons as Season[]) : undefined,
   originalCreatorId: item.original_creator_id
 });
+
