@@ -1,4 +1,3 @@
-
 import { MediaItem, MediaType, Season } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -59,20 +58,44 @@ export const calculateAverageRating = (seasons: Season[]) => {
 };
 
 // Transform data from database format to app format
-export const transformDbItemToMediaItem = (item: any): MediaItem => ({
-  id: item.id,
-  title: item.title,
-  type: item.type as MediaType,
-  imageUrl: item.image_url,
-  creator: item.creator,
-  releaseYear: item.release_year,
-  addedDate: item.added_date,
-  review: item.review_rating ? {
-    rating: item.review_rating,
-    text: item.review_text || '',
-    date: item.review_date || new Date().toISOString().split("T")[0]
-  } : undefined,
-  seasons: item.seasons ? (item.seasons as Season[]) : undefined,
-  originalCreatorId: item.original_creator_id
-});
-
+export const transformDbItemToMediaItem = (item: any): MediaItem => {
+  // Safety check to make sure item exists
+  if (!item) {
+    console.error("Attempted to transform undefined or null item");
+    throw new Error("Cannot transform undefined item to MediaItem");
+  }
+  
+  // Handle potential undefined seasons with optional chaining and type casting
+  let seasons: Season[] | undefined = undefined;
+  if (item.seasons) {
+    try {
+      // If it's a string (from JSON), parse it
+      if (typeof item.seasons === 'string') {
+        seasons = JSON.parse(item.seasons) as Season[];
+      } else {
+        // Otherwise cast it directly with type assertion
+        seasons = item.seasons as Season[];
+      }
+    } catch (err) {
+      console.error("Error parsing seasons data:", err);
+      seasons = undefined;
+    }
+  }
+  
+  return {
+    id: item.id,
+    title: item.title,
+    type: item.type as MediaType,
+    imageUrl: item.image_url,
+    creator: item.creator,
+    releaseYear: item.release_year,
+    addedDate: item.added_date,
+    review: item.review_rating ? {
+      rating: item.review_rating,
+      text: item.review_text || '',
+      date: item.review_date || new Date().toISOString().split("T")[0]
+    } : undefined,
+    seasons: seasons,
+    originalCreatorId: item.original_creator_id
+  };
+};
