@@ -12,6 +12,7 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileMediaTabs from "@/components/profile/ProfileMediaTabs";
 import FollowersModal from "@/components/FollowersModal";
 import type { FollowCounts } from "@/types/follow";
+import { MediaItem } from "@/types";
 
 interface ProfileData {
   username: string | null;
@@ -31,10 +32,79 @@ const Profile = () => {
   const [followCounts, setFollowCounts] = useState<FollowCounts>({ followers: 0, following: 0 });
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
+  const [profileMedia, setProfileMedia] = useState<{
+    all: MediaItem[],
+    movie: MediaItem[],
+    tv: MediaItem[],
+    book: MediaItem[],
+  }>({
+    all: [],
+    movie: [],
+    tv: [],
+    book: [],
+  });
+  const [loadingMedia, setLoadingMedia] = useState(false);
   
   // Determine if this is the current user's profile or someone else's
   const isCurrentUserProfile = !userId || (user && userId === user.id);
   const displayUserId = isCurrentUserProfile ? user?.id : userId;
+
+  // Load profile media items when viewing another user's profile
+  useEffect(() => {
+    const fetchProfileMedia = async () => {
+      if (!displayUserId) return;
+      
+      setLoadingMedia(true);
+      try {
+        const { data, error } = await supabase
+          .from('media_items')
+          .select('*')
+          .eq('user_id', displayUserId);
+          
+        if (error) throw error;
+        
+        if (data) {
+          const transformedData = data.map((item) => ({
+            id: item.id,
+            title: item.title,
+            type: item.type as MediaType,
+            imageUrl: item.image_url,
+            creator: item.creator,
+            releaseYear: item.release_year,
+            addedDate: item.added_date,
+            review: item.review_rating || item.review_text 
+              ? {
+                  rating: item.review_rating || 0,
+                  text: item.review_text || '',
+                  date: item.review_date || new Date().toISOString().split('T')[0],
+                }
+              : undefined,
+            seasons: item.seasons,
+            originalCreatorId: item.original_creator_id,
+          }));
+          
+          const movies = transformedData.filter(item => item.type === 'movie');
+          const tvShows = transformedData.filter(item => item.type === 'tv');
+          const books = transformedData.filter(item => item.type === 'book');
+          
+          setProfileMedia({
+            all: transformedData.sort((a, b) => 
+              new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
+            ),
+            movie: movies,
+            tv: tvShows,
+            book: books,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching profile media:", error);
+      } finally {
+        setLoadingMedia(false);
+      }
+    };
+    
+    fetchProfileMedia();
+  }, [displayUserId]);
   
   // Effect to load profile data
   useEffect(() => {
@@ -66,13 +136,13 @@ const Profile = () => {
     fetchProfile();
   }, [displayUserId, user]);
   
-  // Effect to load media items if viewing another user's profile
+  // Effect to load media items if viewing current user's profile
   useEffect(() => {
-    if (userId && userId !== user?.id) {
-      // We need to load this user's media items
-      loadMediaItems(userId);
+    if (isCurrentUserProfile && user?.id) {
+      // Only load from MediaContext if it's the current user
+      loadMediaItems(user.id);
     }
-  }, [userId, user?.id]);
+  }, [isCurrentUserProfile, user?.id]);
   
   if (!user && isCurrentUserProfile) {
     return (
@@ -91,28 +161,33 @@ const Profile = () => {
   const displayName = profileData?.username || 
                      (isCurrentUserProfile ? user?.email?.split('@')[0] : 'User');
 
-  const mediaCount = {
+  const mediaData = isCurrentUserProfile ? {
     all: movies.length + tvShows.length + books.length,
     movie: movies.length,
     tv: tvShows.length,
     book: books.length,
+  } : {
+    all: profileMedia.all.length,
+    movie: profileMedia.movie.length,
+    tv: profileMedia.tv.length,
+    book: profileMedia.book.length,
   };
 
-  const filteredMedia = {
+  const mediaItems = isCurrentUserProfile ? {
     all: [...movies, ...tvShows, ...books].sort(
       (a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
     ),
     movie: movies,
     tv: tvShows,
     book: books,
-  };
+  } : profileMedia;
 
   const handleOpenFollowModal = (tab: 'followers' | 'following') => {
     setFollowModalTab(tab);
     setIsFollowModalOpen(true);
   };
 
-  if (isLoading || loadingProfile) {
+  if (isLoading || loadingProfile || loadingMedia) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
@@ -132,15 +207,15 @@ const Profile = () => {
           displayUserId={displayUserId}
           isCurrentUserProfile={isCurrentUserProfile}
           followCounts={followCounts}
-          mediaCount={mediaCount.all}
+          mediaCount={mediaData.all}
           onOpenFollowModal={handleOpenFollowModal}
         />
 
         <ProfileMediaTabs 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          mediaCount={mediaCount}
-          filteredMedia={filteredMedia}
+          mediaCount={mediaData}
+          filteredMedia={mediaItems}
           isCurrentUserProfile={isCurrentUserProfile}
         />
       </div>
