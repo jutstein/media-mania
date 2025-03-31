@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { MediaItem } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { transformDbItemToMediaItem } from "@/utils/mediaUtils";
@@ -18,19 +18,17 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
   });
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
-  const userId = useRef(displayUserId);
 
   useEffect(() => {
-    // Reset fetch status if user ID changes
-    if (displayUserId !== userId.current) {
-      hasFetched.current = false;
-      userId.current = displayUserId;
-    }
-    
-    // Mark component as mounted
-    isMounted.current = true;
+    // Reset state when userId changes
+    setProfileMedia({
+      all: [],
+      movie: [],
+      tv: [],
+      book: [],
+    });
+    setLoadingMedia(true);
+    setError(null);
     
     const fetchProfileMedia = async () => {
       // If no user ID is provided, set loading to false and return
@@ -40,22 +38,15 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
         return;
       }
 
-      // Skip fetching if this is current user's profile as media comes from MediaContext
+      // Only skip fetching if this is the current user's profile
+      // For other users, we should always fetch their media directly
       if (isCurrentUserProfile) {
         console.log("Current user profile, skipping direct media fetch");
         setLoadingMedia(false);
         return;
       }
       
-      // If we've already fetched this user's media, don't fetch again
-      if (hasFetched.current) {
-        console.log("Already fetched media for this user");
-        setLoadingMedia(false);
-        return;
-      }
-      
       console.log("Fetching profile media for user:", displayUserId);
-      setLoadingMedia(true);
       
       try {
         const { data, error } = await supabase
@@ -65,14 +56,12 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           
         if (error) {
           console.error("Error fetching profile media:", error);
-          if (isMounted.current) {
-            setError(error);
-            setLoadingMedia(false);
-          }
+          setError(error);
+          setLoadingMedia(false);
           return;
         }
         
-        if (data && isMounted.current) {
+        if (data) {
           console.log("Fetched media items:", data.length);
           // Use the utility function to transform database items to MediaItem type
           const transformedData = data.map(item => transformDbItemToMediaItem(item));
@@ -81,34 +70,25 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           const tvShows = transformedData.filter(item => item.type === 'tv');
           const books = transformedData.filter(item => item.type === 'book');
           
-          if (isMounted.current) {
-            setProfileMedia({
-              all: transformedData.sort((a, b) => 
-                new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
-              ),
-              movie: movies,
-              tv: tvShows,
-              book: books,
-            });
-            
-            hasFetched.current = true;
-            setLoadingMedia(false);
-          }
+          setProfileMedia({
+            all: transformedData.sort((a, b) => 
+              new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
+            ),
+            movie: movies,
+            tv: tvShows,
+            book: books,
+          });
+          
+          setLoadingMedia(false);
         }
       } catch (error: any) {
         console.error("Error fetching profile media:", error);
-        if (isMounted.current) {
-          setError(error);
-          setLoadingMedia(false);
-        }
+        setError(error);
+        setLoadingMedia(false);
       }
     };
     
     fetchProfileMedia();
-    
-    return () => {
-      isMounted.current = false;
-    };
   }, [displayUserId, isCurrentUserProfile]);
 
   return {

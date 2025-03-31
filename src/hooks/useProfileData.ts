@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFollow } from "@/hooks/useFollow";
 import { FollowCounts } from "@/types/follow";
@@ -17,20 +17,11 @@ export function useProfileData(userId: string | null | undefined) {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
   
-  // Use a ref to track component mount state
-  const isMounted = useRef(true);
-  // Use a ref to track if we've already fetched data
-  const hasFetched = useRef(false);
-  const currentUserId = useRef(userId);
-
   useEffect(() => {
-    // Reset fetch status if user ID changes
-    if (userId !== currentUserId.current) {
-      hasFetched.current = false;
-      currentUserId.current = userId;
-    }
-    
-    isMounted.current = true;
+    // Clear state when userId changes
+    setProfileData(null);
+    setLoadingProfile(true);
+    setError(null);
     
     // If we don't have a userId, there's nothing to fetch
     if (!userId) {
@@ -39,18 +30,9 @@ export function useProfileData(userId: string | null | undefined) {
       return;
     }
     
-    // If we've already fetched this user's data and it matches our state, don't fetch again
-    if (hasFetched.current && userId === profileUserId) {
-      console.log("Already fetched profile data for", userId);
-      setLoadingProfile(false);
-      return;
-    }
+    console.log("Fetching profile data for user:", userId);
     
     const fetchProfile = async () => {
-      console.log("Fetching profile data for user:", userId);
-      setLoadingProfile(true);
-      setError(null);
-      
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -60,46 +42,33 @@ export function useProfileData(userId: string | null | undefined) {
           
         if (error) {
           console.error("Error fetching profile:", error);
-          if (isMounted.current) {
-            setError(error);
-            setLoadingProfile(false);
-          }
+          setError(error);
+          setLoadingProfile(false);
           return;
         }
         
         console.log("Profile data fetched:", data);
         
-        if (isMounted.current) {
-          setProfileData(data);
-          setProfileUserId(userId);
-          
-          // Also fetch follow counts
-          try {
-            const counts = await getFollowCounts(userId);
-            if (isMounted.current) {
-              setFollowCounts(counts);
-            }
-          } catch (followError) {
-            console.error("Error fetching follow counts:", followError);
-          }
-          
-          hasFetched.current = true;
-          setLoadingProfile(false);
+        setProfileData(data);
+        setProfileUserId(userId);
+        
+        // Also fetch follow counts
+        try {
+          const counts = await getFollowCounts(userId);
+          setFollowCounts(counts);
+        } catch (followError) {
+          console.error("Error fetching follow counts:", followError);
         }
+        
+        setLoadingProfile(false);
       } catch (error: any) {
         console.error("Error fetching profile:", error);
-        if (isMounted.current) {
-          setError(error);
-          setLoadingProfile(false);
-        }
+        setError(error);
+        setLoadingProfile(false);
       }
     };
     
     fetchProfile();
-    
-    return () => {
-      isMounted.current = false;
-    };
   }, [userId, getFollowCounts]);
 
   return {

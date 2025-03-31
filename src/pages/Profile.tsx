@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +15,7 @@ import { useProfileMedia } from "@/hooks/useProfileMedia";
 const Profile = () => {
   const { userId } = useParams();
   const { user } = useAuth();
-  const { movies, tvShows, books, isLoading: isMediaLoading, loadMediaItems } = useMedia();
+  const { movies, tvShows, books, isLoading: isMediaLoading } = useMedia();
   
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
@@ -36,14 +36,6 @@ const Profile = () => {
   const { profileData, profileUserId, followCounts, loadingProfile, error: profileError } = useProfileData(displayUserId);
   const { profileMedia, loadingMedia, error: mediaError } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
-  // Load media items if viewing current user's profile
-  useEffect(() => {
-    if (isCurrentUserProfile && user?.id) {
-      console.log("Loading media items for current user:", user.id);
-      loadMediaItems(user.id);
-    }
-  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
-  
   // Display login prompt if not logged in and viewing own profile
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
