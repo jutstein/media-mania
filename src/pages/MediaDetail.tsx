@@ -25,6 +25,7 @@ const MediaDetail = () => {
   
   const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isReviewEditing, setIsReviewEditing] = useState(false);
   const [creatorProfile, setCreatorProfile] = useState<{username: string | null} | null>(null);
   
   // Check if the item belongs to the current user
@@ -110,7 +111,10 @@ const MediaDetail = () => {
                   
                   {isUserItem && (
                     <MediaActions 
-                      mediaItem={mediaItem}
+                      title={mediaItem.title}
+                      mediaId={mediaItem.id}
+                      isReviewEditing={isReviewEditing}
+                      setIsReviewEditing={setIsReviewEditing}
                       onDelete={handleDeleteItem}
                     />
                   )}
@@ -156,7 +160,10 @@ const MediaDetail = () => {
             
             {isUserItem && (
               <MediaActions 
-                mediaItem={mediaItem}
+                title={mediaItem.title}
+                mediaId={mediaItem.id}
+                isReviewEditing={isReviewEditing}
+                setIsReviewEditing={setIsReviewEditing}
                 onDelete={handleDeleteItem}
               />
             )}
