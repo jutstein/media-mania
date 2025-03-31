@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { FollowCounts, ProfileWithFollow } from '@/types/follow';
 import * as followService from '@/services/followService';
+import { supabase } from '@/integrations/supabase/client';
 
 export type { FollowCounts, ProfileWithFollow };
 
@@ -107,6 +108,3 @@ export const useFollow = () => {
     getFollowList
   };
 };
-
-// Import supabase client inside the hook to avoid missing import
-import { supabase } from '@/integrations/supabase/client';

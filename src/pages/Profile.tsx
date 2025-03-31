@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
@@ -54,41 +55,44 @@ const Profile = () => {
     const fetchProfileMedia = async () => {
       if (!displayUserId) return;
       
-      setLoadingMedia(true);
-      try {
-        const { data, error } = await supabase
-          .from('media_items')
-          .select('*')
-          .eq('user_id', displayUserId);
+      // Only fetch from DB directly if viewing another user's profile
+      if (!isCurrentUserProfile) {
+        setLoadingMedia(true);
+        try {
+          const { data, error } = await supabase
+            .from('media_items')
+            .select('*')
+            .eq('user_id', displayUserId);
+            
+          if (error) throw error;
           
-        if (error) throw error;
-        
-        if (data) {
-          // Use the utility function to transform database items to MediaItem type
-          const transformedData = data.map(item => transformDbItemToMediaItem(item));
-          
-          const movies = transformedData.filter(item => item.type === 'movie');
-          const tvShows = transformedData.filter(item => item.type === 'tv');
-          const books = transformedData.filter(item => item.type === 'book');
-          
-          setProfileMedia({
-            all: transformedData.sort((a, b) => 
-              new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
-            ),
-            movie: movies,
-            tv: tvShows,
-            book: books,
-          });
+          if (data) {
+            // Use the utility function to transform database items to MediaItem type
+            const transformedData = data.map(item => transformDbItemToMediaItem(item));
+            
+            const movies = transformedData.filter(item => item.type === 'movie');
+            const tvShows = transformedData.filter(item => item.type === 'tv');
+            const books = transformedData.filter(item => item.type === 'book');
+            
+            setProfileMedia({
+              all: transformedData.sort((a, b) => 
+                new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
+              ),
+              movie: movies,
+              tv: tvShows,
+              book: books,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching profile media:", error);
+        } finally {
+          setLoadingMedia(false);
         }
-      } catch (error) {
-        console.error("Error fetching profile media:", error);
-      } finally {
-        setLoadingMedia(false);
       }
     };
     
     fetchProfileMedia();
-  }, [displayUserId]);
+  }, [displayUserId, isCurrentUserProfile]);
   
   // Effect to load profile data
   useEffect(() => {
@@ -118,7 +122,7 @@ const Profile = () => {
     };
     
     fetchProfile();
-  }, [displayUserId, user]);
+  }, [displayUserId, user, getFollowCounts]);
   
   // Effect to load media items if viewing current user's profile
   useEffect(() => {
@@ -126,7 +130,7 @@ const Profile = () => {
       // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }
-  }, [isCurrentUserProfile, user?.id]);
+  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return (
@@ -171,7 +175,7 @@ const Profile = () => {
     setIsFollowModalOpen(true);
   };
 
-  if (isLoading || loadingProfile || loadingMedia) {
+  if (isLoading || loadingProfile || (loadingMedia && !isCurrentUserProfile)) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
