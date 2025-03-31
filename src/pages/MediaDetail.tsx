@@ -48,16 +48,16 @@ const MediaDetail = () => {
             // Transform database format to app format
             const transformedItem: MediaItem = {
               id: data.id,
-              title: data.title,
-              type: data.type as MediaType, // Cast to MediaType
+              title: data.title || "",
+              type: data.type as MediaType || "movie", // Provide default value to prevent issues
               creator: data.creator || "",
-              releaseYear: data.release_year || 0,
+              releaseYear: typeof data.release_year === 'number' ? data.release_year : undefined,
               imageUrl: data.image_url || "",
               addedDate: data.added_date || new Date().toISOString().split("T")[0],
               originalCreatorId: data.original_creator_id || null,
               seasons: data.seasons ? transformSeasons(data.seasons) : [], // Transform seasons with type safety
               review: data.review_rating ? {
-                rating: data.review_rating,
+                rating: typeof data.review_rating === 'number' ? data.review_rating : 0,
                 text: data.review_text || "",
                 date: data.review_date || new Date().toISOString().split("T")[0]
               } : undefined
