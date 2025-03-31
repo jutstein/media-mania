@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MediaItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,31 +9,12 @@ import StarRating from "@/components/StarRating";
 interface MediaReviewSectionProps {
   mediaItem: MediaItem;
   updateMediaItem: (id: string, updates: Partial<MediaItem>) => Promise<string | undefined>;
-  isReviewEditing?: boolean;
-  setIsReviewEditing?: (isEditing: boolean) => void;
 }
 
-const MediaReviewSection = ({ 
-  mediaItem, 
-  updateMediaItem, 
-  isReviewEditing: externalIsEditing,
-  setIsReviewEditing: externalSetIsEditing 
-}: MediaReviewSectionProps) => {
-  // Use internal state if no external state is provided
-  const [internalIsEditing, setInternalIsEditing] = useState(false);
-  
-  // Use either external or internal state management
-  const isReviewEditing = externalIsEditing !== undefined ? externalIsEditing : internalIsEditing;
-  const setIsReviewEditing = externalSetIsEditing || setInternalIsEditing;
-  
+const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionProps) => {
+  const [isReviewEditing, setIsReviewEditing] = useState(false);
   const [rating, setRating] = useState(mediaItem?.review?.rating || 0);
   const [reviewText, setReviewText] = useState(mediaItem?.review?.text || "");
-
-  // Update local state when mediaItem changes (useful for direct URL navigation)
-  useEffect(() => {
-    setRating(mediaItem?.review?.rating || 0);
-    setReviewText(mediaItem?.review?.text || "");
-  }, [mediaItem]);
 
   const handleSaveReview = () => {
     updateMediaItem(mediaItem.id, {
@@ -43,12 +24,6 @@ const MediaReviewSection = ({
         date: new Date().toISOString().split("T")[0],
       }
     });
-    setIsReviewEditing(false);
-  };
-
-  const handleCancelEditing = () => {
-    setRating(mediaItem.review?.rating || 0);
-    setReviewText(mediaItem.review?.text || "");
     setIsReviewEditing(false);
   };
 
@@ -86,7 +61,11 @@ const MediaReviewSection = ({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button onClick={handleCancelEditing} variant="outline">
+            <Button onClick={() => {
+              setRating(mediaItem.review?.rating || 0);
+              setReviewText(mediaItem.review?.text || "");
+              setIsReviewEditing(false);
+            }} variant="outline">
               Cancel
             </Button>
             <Button onClick={handleSaveReview}>Save Review</Button>

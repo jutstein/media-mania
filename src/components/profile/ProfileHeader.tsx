@@ -32,20 +32,9 @@ const ProfileHeader = ({
   onOpenFollowModal
 }: ProfileHeaderProps) => {
   const handleShare = () => {
-    // Create a proper shareable URL with the full path to the profile
-    let shareableUrl = '';
-    
-    if (isCurrentUserProfile) {
-      // If it's the current user's profile, create a link using their userId
-      shareableUrl = displayUserId ? 
-        `${window.location.origin}/profile/${displayUserId}` : 
-        `${window.location.origin}/profile`;
-    } else {
-      // If viewing someone else's profile, use the current URL
-      shareableUrl = window.location.href;
-    }
-    
-    navigator.clipboard.writeText(shareableUrl);
+    const url = window.location.origin + (isCurrentUserProfile ? 
+      `/profile/${displayUserId}` : window.location.pathname);
+    navigator.clipboard.writeText(url);
     toast.success("Profile link copied to clipboard!");
   };
 

@@ -1,4 +1,3 @@
-
 import { MediaItem, MediaType, Season } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -22,7 +21,7 @@ export const generatePlaceholderImage = (title: string, type: MediaType) => {
     // More TV related images
     imageIds = [
       "photo-1522869635100-9f4c5e86aa37", 
-      "photo-1593359677879-4bb92f829d1", 
+      "photo-1593359677879-a4bb92f829d1", 
       "photo-1593784991095-a205069470b6",
       "photo-1593784991086-c8c04647eb22",  // TV studio
       "photo-1611162617474-5b21e879e113"   // TV screen
@@ -58,7 +57,7 @@ export const calculateAverageRating = (seasons: Season[]) => {
   return sum / ratedSeasons.length;
 };
 
-// Transform data from database format to app format with stronger type safety
+// Transform data from database format to app format
 export const transformDbItemToMediaItem = (item: any): MediaItem => {
   // Safety check to make sure item exists
   if (!item) {
@@ -67,51 +66,36 @@ export const transformDbItemToMediaItem = (item: any): MediaItem => {
   }
   
   // Handle potential undefined seasons with optional chaining and type casting
-  let seasons: Season[] = [];
+  let seasons: Season[] | undefined = undefined;
   if (item.seasons) {
     try {
       // If it's a string (from JSON), parse it
       if (typeof item.seasons === 'string') {
-        const parsed = JSON.parse(item.seasons);
-        if (Array.isArray(parsed)) {
-          seasons = parsed.map(season => ({
-            number: typeof season.number === 'number' ? season.number : 0,
-            watched: Boolean(season.watched),
-            episodesWatched: typeof season.episodesWatched === 'number' ? season.episodesWatched : undefined,
-            totalEpisodes: typeof season.totalEpisodes === 'number' ? season.totalEpisodes : undefined,
-            rating: typeof season.rating === 'number' ? season.rating : undefined
-          }));
-        }
-      } else if (Array.isArray(item.seasons)) {
-        // If it's already an array, transform it directly
-        seasons = item.seasons.map(season => ({
-          number: typeof season.number === 'number' ? season.number : 0,
-          watched: Boolean(season.watched),
-          episodesWatched: typeof season.episodesWatched === 'number' ? season.episodesWatched : undefined,
-          totalEpisodes: typeof season.totalEpisodes === 'number' ? season.totalEpisodes : undefined,
-          rating: typeof season.rating === 'number' ? season.rating : undefined
-        }));
+        seasons = JSON.parse(item.seasons) as Season[];
+      } else {
+        // Otherwise cast it directly with type assertion
+        seasons = item.seasons as Season[];
       }
     } catch (err) {
       console.error("Error parsing seasons data:", err);
-      seasons = [];
+      seasons = undefined;
     }
   }
   
   return {
     id: item.id,
-    title: item.title || "",
-    type: (item.type as MediaType) || "movie", // Provide a default value
-    imageUrl: item.image_url || "",
-    creator: item.creator || "",
-    releaseYear: typeof item.release_year === 'number' ? item.release_year : undefined,
-    addedDate: item.added_date || new Date().toISOString().split("T")[0],
+    title: item.title,
+    type: item.type as MediaType,
+    imageUrl: item.image_url,
+    creator: item.creator,
+    releaseYear: item.release_year,
+    addedDate: item.added_date,
     review: item.review_rating ? {
-      rating: typeof item.review_rating === 'number' ? item.review_rating : 0,
+      rating: item.review_rating,
       text: item.review_text || '',
       date: item.review_date || new Date().toISOString().split("T")[0]
     } : undefined,
     seasons: seasons,
-    originalCreatorId: item.original_creator_id || null
+    originalCreatorId: item.original_creator_id
   };
 };

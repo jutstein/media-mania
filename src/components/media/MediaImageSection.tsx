@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SharedImagePicker from "@/components/SharedImagePicker";
-import { ImageIcon, Film, Tv, Book } from "lucide-react";
+import { ImageIcon, User, Film, Tv, Book } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -22,6 +22,8 @@ interface MediaImageSectionProps {
 const MediaImageSection = ({
   mediaItem,
   isGeneratingImage,
+  userId,
+  creatorProfile,
   updateMediaItem,
   generateImageForTitle,
   handleSelectSharedImage
@@ -161,6 +163,13 @@ const MediaImageSection = ({
             <ImageIcon className="mr-2 h-4 w-4" />
             Change Image
           </Button>
+        </div>
+      )}
+      
+      {creatorProfile && mediaItem.originalCreatorId !== userId && (
+        <div className="mb-4 text-sm text-muted-foreground text-center bg-secondary/20 rounded-md p-2">
+          <User className="h-4 w-4 inline-block mr-1" />
+          Image added by {creatorProfile.username || "another user"}
         </div>
       )}
     </motion.div>
