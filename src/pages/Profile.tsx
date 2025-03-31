@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
@@ -54,6 +55,11 @@ const Profile = () => {
     const fetchProfileMedia = async () => {
       if (!displayUserId) return;
       
+      // Don't fetch directly if it's the current user's profile
+      if (isCurrentUserProfile && user) {
+        return; // We'll use the MediaContext data instead
+      }
+      
       setLoadingMedia(true);
       try {
         const { data, error } = await supabase
@@ -88,7 +94,7 @@ const Profile = () => {
     };
     
     fetchProfileMedia();
-  }, [displayUserId]);
+  }, [displayUserId, isCurrentUserProfile, user]);
   
   // Effect to load profile data
   useEffect(() => {
@@ -118,7 +124,7 @@ const Profile = () => {
     };
     
     fetchProfile();
-  }, [displayUserId, user]);
+  }, [displayUserId, user, getFollowCounts]);
   
   // Effect to load media items if viewing current user's profile
   useEffect(() => {
@@ -126,7 +132,7 @@ const Profile = () => {
       // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }
-  }, [isCurrentUserProfile, user?.id]);
+  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return (
@@ -171,7 +177,7 @@ const Profile = () => {
     setIsFollowModalOpen(true);
   };
 
-  if (isLoading || loadingProfile || loadingMedia) {
+  if (isLoading || loadingProfile || (loadingMedia && !isCurrentUserProfile)) {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
