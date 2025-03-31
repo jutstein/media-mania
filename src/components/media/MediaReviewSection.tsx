@@ -9,10 +9,23 @@ import StarRating from "@/components/StarRating";
 interface MediaReviewSectionProps {
   mediaItem: MediaItem;
   updateMediaItem: (id: string, updates: Partial<MediaItem>) => Promise<string | undefined>;
+  isReviewEditing?: boolean;
+  setIsReviewEditing?: (isEditing: boolean) => void;
 }
 
-const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionProps) => {
-  const [isReviewEditing, setIsReviewEditing] = useState(false);
+const MediaReviewSection = ({ 
+  mediaItem, 
+  updateMediaItem, 
+  isReviewEditing: externalIsEditing,
+  setIsReviewEditing: externalSetIsEditing 
+}: MediaReviewSectionProps) => {
+  // Use internal state if no external state is provided
+  const [internalIsEditing, setInternalIsEditing] = useState(false);
+  
+  // Use either external or internal state management
+  const isReviewEditing = externalIsEditing !== undefined ? externalIsEditing : internalIsEditing;
+  const setIsReviewEditing = externalSetIsEditing || setInternalIsEditing;
+  
   const [rating, setRating] = useState(mediaItem?.review?.rating || 0);
   const [reviewText, setReviewText] = useState(mediaItem?.review?.text || "");
 
@@ -30,6 +43,12 @@ const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionPr
         date: new Date().toISOString().split("T")[0],
       }
     });
+    setIsReviewEditing(false);
+  };
+
+  const handleCancelEditing = () => {
+    setRating(mediaItem.review?.rating || 0);
+    setReviewText(mediaItem.review?.text || "");
     setIsReviewEditing(false);
   };
 
@@ -67,11 +86,7 @@ const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionPr
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button onClick={() => {
-              setRating(mediaItem.review?.rating || 0);
-              setReviewText(mediaItem.review?.text || "");
-              setIsReviewEditing(false);
-            }} variant="outline">
+            <Button onClick={handleCancelEditing} variant="outline">
               Cancel
             </Button>
             <Button onClick={handleSaveReview}>Save Review</Button>

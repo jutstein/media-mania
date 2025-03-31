@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { MediaItem, MediaType } from "@/types";
+import { MediaItem } from "@/types";
 import MediaImageSection from "@/components/media/MediaImageSection";
 import MediaDetailsSection from "@/components/media/MediaDetailsSection";
 import MediaReviewSection from "@/components/media/MediaReviewSection";
@@ -141,6 +141,8 @@ const MediaDetail = () => {
                 <MediaReviewSection
                   mediaItem={mediaItem}
                   updateMediaItem={handleUpdateMediaItem}
+                  isReviewEditing={isReviewEditing}
+                  setIsReviewEditing={setIsReviewEditing}
                 />
               </>
             )}
