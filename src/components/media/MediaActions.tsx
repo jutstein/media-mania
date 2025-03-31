@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 interface MediaActionsProps {
   title: string;
+  mediaId: string; // Add mediaId prop
   isReviewEditing: boolean;
   setIsReviewEditing: (isEditing: boolean) => void;
   onDelete: () => void;
@@ -13,13 +14,15 @@ interface MediaActionsProps {
 
 const MediaActions = ({
   title,
+  mediaId,
   isReviewEditing,
   setIsReviewEditing,
   onDelete,
 }: MediaActionsProps) => {
   const handleShare = () => {
-    // In a real app, this would generate a shareable link
-    navigator.clipboard.writeText(window.location.href);
+    // Create a proper shareable URL with the full path to the media item
+    const shareableUrl = `${window.location.origin}/media/${mediaId}`;
+    navigator.clipboard.writeText(shareableUrl);
     toast.success("Link copied to clipboard!");
   };
 

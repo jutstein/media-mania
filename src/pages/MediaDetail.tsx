@@ -124,6 +124,7 @@ const MediaDetail = () => {
 
             <MediaActions
               title={mediaItem.title}
+              mediaId={mediaItem.id} // Pass the mediaId to MediaActions
               isReviewEditing={isReviewEditing}
               setIsReviewEditing={setIsReviewEditing}
               onDelete={handleDelete}
