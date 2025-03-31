@@ -1,5 +1,5 @@
 
-import { useParams, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import MediaCard from "@/components/MediaCard";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,15 @@ import { MediaType } from "@/types";
 import { motion } from "framer-motion";
 
 const CategoryPage = () => {
-  const { category } = useParams<{ category: string }>();
+  const location = useLocation();
   const { movies, tvShows, books } = useMedia();
+  
+  // Get category from path
+  const path = location.pathname;
+  const category = path.split('/')[1]; // This will extract 'movies', 'tv-shows', or 'books' from the URL
+  
+  console.log("Path:", path);
+  console.log("Extracted category:", category);
 
   // Map category from URL to media type
   let mediaType: MediaType = "movie";
@@ -17,6 +24,7 @@ const CategoryPage = () => {
   let icon = <Film className="h-6 w-6 mb-1" />;
   let items = movies;
 
+  // Handle different URL paths
   if (category === "tv-shows") {
     mediaType = "tv";
     pageTitle = "TV Shows";
@@ -27,7 +35,18 @@ const CategoryPage = () => {
     pageTitle = "Books";
     icon = <BookOpen className="h-6 w-6 mb-1" />;
     items = books;
+  } else {
+    // Default to movies if no category matched
+    mediaType = "movie";
+    items = movies;
   }
+
+  console.log("Category:", category);
+  console.log("Media type:", mediaType);
+  console.log("Items count:", items.length);
+  console.log("Movies count:", movies.length);
+  console.log("TV shows count:", tvShows.length);
+  console.log("Books count:", books.length);
 
   const containerVariants = {
     hidden: { opacity: 0 },

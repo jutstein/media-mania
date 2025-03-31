@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MediaItem, MediaType, Season } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,38 +136,81 @@ export const useMediaCrud = (
         await addSharedImage(updatedItem.title, updatedItem.type, updates.imageUrl, userId);
       }
       
-      // Update in Supabase
-      const { error } = await supabase
-        .from('media_items')
-        .update({
-          title: updatedItem.title,
-          type: updatedItem.type,
-          image_url: updatedItem.imageUrl,
-          creator: updatedItem.creator,
-          release_year: updatedItem.releaseYear,
-          review_rating: updatedItem.review?.rating,
-          review_text: updatedItem.review?.text,
-          review_date: updatedItem.review?.date,
-          seasons: updatedItem.seasons as unknown as Json,
-          original_creator_id: updatedItem.originalCreatorId
-        })
-        .eq('id', id);
+      // For type changes, generate a new ID to maintain the naming convention
+      const needsNewId = updates.type && updates.type !== existingItem.type;
+      const updatedId = needsNewId ? `${updatedItem.type}${Date.now()}` : id;
+      
+      if (needsNewId) {
+        // Delete the old item if we're creating a new ID
+        await supabase
+          .from('media_items')
+          .delete()
+          .eq('id', id);
+          
+        // Insert as new item with new ID
+        const { error } = await supabase
+          .from('media_items')
+          .insert({
+            id: updatedId,
+            user_id: userId,
+            title: updatedItem.title,
+            type: updatedItem.type,
+            image_url: updatedItem.imageUrl,
+            creator: updatedItem.creator,
+            release_year: updatedItem.releaseYear,
+            added_date: updatedItem.addedDate,
+            review_rating: updatedItem.review?.rating,
+            review_text: updatedItem.review?.text,
+            review_date: updatedItem.review?.date,
+            seasons: updatedItem.seasons as unknown as Json,
+            original_creator_id: updatedItem.originalCreatorId
+          });
+          
+        if (error) throw error;
+      } else {
+        // Normal update for unchanged type
+        const { error } = await supabase
+          .from('media_items')
+          .update({
+            title: updatedItem.title,
+            type: updatedItem.type,
+            image_url: updatedItem.imageUrl,
+            creator: updatedItem.creator,
+            release_year: updatedItem.releaseYear,
+            review_rating: updatedItem.review?.rating,
+            review_text: updatedItem.review?.text,
+            review_date: updatedItem.review?.date,
+            seasons: updatedItem.seasons as unknown as Json,
+            original_creator_id: updatedItem.originalCreatorId
+          })
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      // Update local state
-      setMedia((prev) =>
-        prev.map((item) => {
-          if (item.id === id) {
-            return updatedItem;
-          }
-          return item;
-        })
-      );
+      // Update local state, removing old item and adding updated one if ID changed
+      if (needsNewId) {
+        updatedItem.id = updatedId;
+        setMedia((prev) => prev.filter(item => item.id !== id).concat(updatedItem));
+      } else {
+        setMedia((prev) =>
+          prev.map((item) => {
+            if (item.id === id) {
+              return updatedItem;
+            }
+            return item;
+          })
+        );
+      }
+      
       toast.success("Updated successfully!");
+      
+      // Return the new ID if it changed
+      return needsNewId ? updatedId : id;
     } catch (error: any) {
       console.error("Error updating media item:", error.message);
       toast.error("Failed to update media item");
+      return id;
     }
   };
 

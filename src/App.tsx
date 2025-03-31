@@ -45,9 +45,12 @@ const App = () => (
               <Route path="/profile/:userId" element={<Profile />} />
               
               <Route path="/media/:id" element={<MediaDetail />} />
+              
+              {/* Category routes */}
               <Route path="/movies" element={<CategoryPage />} />
               <Route path="/tv-shows" element={<CategoryPage />} />
               <Route path="/books" element={<CategoryPage />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
