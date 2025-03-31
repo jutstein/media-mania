@@ -1,18 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MediaItem, MediaType } from "@/types";
 import MediaImageSection from "@/components/media/MediaImageSection";
 import MediaDetailsSection from "@/components/media/MediaDetailsSection";
 import MediaReviewSection from "@/components/media/MediaReviewSection";
 import MediaActions from "@/components/media/MediaActions";
-import { MediaItem, MediaType, Season } from "@/types";
+import FetchMediaItem from "@/components/media/FetchMediaItem";
+import CreatorProfile from "@/components/media/CreatorProfile";
 
 const MediaDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,147 +21,25 @@ const MediaDetail = () => {
   const { user } = useAuth();
   const { getMediaItemById, updateMediaItem, deleteMediaItem, generateImageForTitle } = useMedia();
   
-  const [mediaItem, setMediaItem] = useState<MediaItem | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
-  const [creatorProfile, setCreatorProfile] = useState<{username: string | null} | null>(null);
+  const [mediaItem, setMediaItem] = useState<MediaItem | undefined>(
+    getMediaItemById(id || "")
+  );
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isReviewEditing, setIsReviewEditing] = useState(false);
 
-  // First try to get media from context
-  useEffect(() => {
-    const item = getMediaItemById(id || "");
-    if (item) {
-      setMediaItem(item);
-      setIsLoading(false);
-    } else if (id) {
-      // If not found in context, try to fetch directly from database
-      const fetchMediaItemDirectly = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('media_items')
-            .select('*')
-            .eq('id', id)
-            .single();
-            
-          if (error) throw error;
-          
-          if (data) {
-            // Transform database format to app format
-            const transformedItem: MediaItem = {
-              id: data.id,
-              title: data.title || "",
-              type: data.type as MediaType || "movie", // Provide default value to prevent issues
-              creator: data.creator || "",
-              releaseYear: typeof data.release_year === 'number' ? data.release_year : undefined,
-              imageUrl: data.image_url || "",
-              addedDate: data.added_date || new Date().toISOString().split("T")[0],
-              originalCreatorId: data.original_creator_id || null,
-              seasons: data.seasons ? transformSeasons(data.seasons) : [], // Transform seasons with type safety
-              review: data.review_rating ? {
-                rating: typeof data.review_rating === 'number' ? data.review_rating : 0,
-                text: data.review_text || "",
-                date: data.review_date || new Date().toISOString().split("T")[0]
-              } : undefined
-            };
-            
-            setMediaItem(transformedItem);
-          } else {
-            navigate("/not-found");
-          }
-        } catch (error) {
-          console.error("Error fetching media item:", error);
-          navigate("/not-found");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      fetchMediaItemDirectly();
-    } else {
-      navigate("/not-found");
-      setIsLoading(false);
-    }
-  }, [id, getMediaItemById, navigate]);
-
-  // Helper function to safely transform seasons data
-  const transformSeasons = (seasonsData: any): Season[] => {
-    if (!seasonsData) return [];
-    
-    try {
-      // If it's already an array, map through and ensure each item has required properties
-      if (Array.isArray(seasonsData)) {
-        return seasonsData.map(season => ({
-          number: typeof season.number === 'number' ? season.number : 0,
-          watched: Boolean(season.watched),
-          episodesWatched: typeof season.episodesWatched === 'number' ? season.episodesWatched : undefined,
-          totalEpisodes: typeof season.totalEpisodes === 'number' ? season.totalEpisodes : undefined,
-          rating: typeof season.rating === 'number' ? season.rating : undefined
-        }));
-      }
-      
-      // If it's a string (JSON), parse it first
-      if (typeof seasonsData === 'string') {
-        const parsed = JSON.parse(seasonsData);
-        if (Array.isArray(parsed)) {
-          return transformSeasons(parsed);
-        }
-      }
-      
-      // Fallback to empty array if data is in an unexpected format
-      console.error("Unexpected seasons data format:", seasonsData);
-      return [];
-    } catch (error) {
-      console.error("Error transforming seasons data:", error);
-      return [];
-    }
+  const handleMediaItemLoaded = (loadedItem: MediaItem) => {
+    setMediaItem(loadedItem);
   };
 
-  // Fetch original creator profile if applicable
-  useEffect(() => {
-    const fetchCreatorProfile = async () => {
-      if (mediaItem?.originalCreatorId) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', mediaItem.originalCreatorId)
-            .single();
-            
-          if (error) throw error;
-          setCreatorProfile(data);
-        } catch (error) {
-          console.error("Error fetching creator profile:", error);
-        }
-      }
-    };
-    
-    if (mediaItem) {
-      fetchCreatorProfile();
-    }
-  }, [mediaItem?.originalCreatorId]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading media details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!mediaItem) {
-    return null;
-  }
-
   const handleDelete = () => {
-    deleteMediaItem(mediaItem.id);
-    navigate(-1);
+    if (mediaItem) {
+      deleteMediaItem(mediaItem.id);
+      navigate(-1);
+    }
   };
 
   const handleGenerateImage = async () => {
-    if (!mediaItem.title) return;
+    if (!mediaItem?.title) return;
     
     setIsGeneratingImage(true);
     try {
@@ -177,6 +56,8 @@ const MediaDetail = () => {
   };
 
   const handleSelectSharedImage = (imageUrl: string) => {
+    if (!mediaItem) return;
+    
     updateMediaItem(mediaItem.id, { 
       imageUrl,
       originalCreatorId: mediaItem.originalCreatorId || user?.id
@@ -194,6 +75,15 @@ const MediaDetail = () => {
     setMediaItem(prev => prev ? {...prev, ...updates} : prev);
     return updatedId;
   };
+
+  // If we don't have a mediaItem yet (not in context), fetch it directly
+  if (!mediaItem) {
+    return (
+      <FetchMediaItem id={id} onMediaLoaded={handleMediaItemLoaded}>
+        <MediaDetail />
+      </FetchMediaItem>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
@@ -214,10 +104,16 @@ const MediaDetail = () => {
             mediaItem={mediaItem}
             isGeneratingImage={isGeneratingImage}
             userId={user?.id}
-            creatorProfile={creatorProfile}
+            creatorProfile={null}
             updateMediaItem={handleUpdateMediaItem}
             generateImageForTitle={generateImageForTitle}
             handleSelectSharedImage={handleSelectSharedImage}
+          />
+
+          {/* Show creator profile info in a separate component */}
+          <CreatorProfile 
+            creatorId={mediaItem.originalCreatorId} 
+            userId={user?.id}
           />
 
           {/* Media Details and Review */}
