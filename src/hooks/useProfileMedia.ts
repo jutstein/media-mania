@@ -19,37 +19,31 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const lastFetchedUserId = useRef<string | null | undefined>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    // Skip re-fetching if userId hasn't changed and we've already fetched once
-    if (displayUserId === lastFetchedUserId.current && lastFetchedUserId.current !== null) {
-      return;
-    }
+    isMountedRef.current = true;
     
     const fetchProfileMedia = async () => {
-      // Reset loading state for new user
-      if (displayUserId !== lastFetchedUserId.current) {
-        setLoadingMedia(true);
-      }
-      
-      if (!displayUserId) {
-        if (isMounted) {
-          setLoadingMedia(false);
-        }
-        return;
-      }
-      
-      // Don't fetch directly if it's the current user's profile
-      // as we'll use the MediaContext data instead
+      // If this is the current user's profile, we don't need to fetch media
+      // as it will be provided via MediaContext
       if (isCurrentUserProfile) {
-        if (isMounted) {
-          setLoadingMedia(false);
-        }
+        setLoadingMedia(false);
         return;
       }
       
+      // Skip if we don't have a user ID to fetch
+      if (!displayUserId) {
+        setLoadingMedia(false);
+        return;
+      }
+      
+      // Skip if we've already fetched this user's media
+      if (displayUserId === lastFetchedUserId.current) {
+        return;
+      }
+      
+      setLoadingMedia(true);
       setError(null);
       
       try {
@@ -61,13 +55,13 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           
         if (error) {
           console.error("Error fetching profile media:", error);
-          if (isMounted) {
+          if (isMountedRef.current) {
             setError(error);
           }
           return;
         }
         
-        if (data && isMounted) {
+        if (data && isMountedRef.current) {
           console.log("Fetched media items:", data.length);
           // Use the utility function to transform database items to MediaItem type
           const transformedData = data.map(item => transformDbItemToMediaItem(item));
@@ -89,11 +83,11 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
         }
       } catch (error: any) {
         console.error("Error fetching profile media:", error);
-        if (isMounted) {
+        if (isMountedRef.current) {
           setError(error);
         }
       } finally {
-        if (isMounted) {
+        if (isMountedRef.current) {
           setLoadingMedia(false);
         }
       }
@@ -102,7 +96,7 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
     fetchProfileMedia();
     
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
   }, [displayUserId, isCurrentUserProfile]);
 

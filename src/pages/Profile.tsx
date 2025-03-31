@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +15,7 @@ import { useProfileMedia } from "@/hooks/useProfileMedia";
 const Profile = () => {
   const { userId } = useParams();
   const { user } = useAuth();
-  const { movies, tvShows, books, isLoading, loadMediaItems } = useMedia();
+  const { movies, tvShows, books, isLoading: isMediaLoading, loadMediaItems } = useMedia();
   
   const [activeTab, setActiveTab] = useState<MediaType | "all">("all");
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
@@ -29,25 +29,26 @@ const Profile = () => {
   const { profileData, profileUserId, followCounts, loadingProfile } = useProfileData(displayUserId);
   const { profileMedia, loadingMedia } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
-  // Memoize the loadMediaItems function to prevent infinite calls
-  const loadUserMedia = useCallback(() => {
+  // Load media items if viewing current user's profile
+  useEffect(() => {
     if (isCurrentUserProfile && user?.id) {
       console.log("Loading media items for current user:", user.id);
       loadMediaItems(user.id);
     }
-  }, [isCurrentUserProfile, user, loadMediaItems]);
-
-  // Effect to load media items if viewing current user's profile
-  useEffect(() => {
-    loadUserMedia();
-  }, [loadUserMedia]);
+  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
   }
 
+  // Determine if we're still loading data
+  const isLoading = 
+    (isMediaLoading && isCurrentUserProfile) || 
+    loadingProfile || 
+    (loadingMedia && !isCurrentUserProfile);
+
   // Display loading state
-  if ((isLoading && isCurrentUserProfile) || loadingProfile || (loadingMedia && !isCurrentUserProfile)) {
+  if (isLoading) {
     return <ProfileLoading />;
   }
 
