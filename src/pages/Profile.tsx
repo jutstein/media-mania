@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
@@ -5,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useFollow } from "@/hooks/useFollow";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { MediaType, Season } from "@/types";
+import { MediaType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileMediaTabs from "@/components/profile/ProfileMediaTabs";
@@ -126,7 +127,7 @@ const Profile = () => {
       // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }
-  }, [isCurrentUserProfile, user?.id]);
+  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return (
