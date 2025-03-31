@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MediaItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,12 @@ const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionPr
   const [isReviewEditing, setIsReviewEditing] = useState(false);
   const [rating, setRating] = useState(mediaItem?.review?.rating || 0);
   const [reviewText, setReviewText] = useState(mediaItem?.review?.text || "");
+
+  // Update local state when mediaItem changes (useful for direct URL navigation)
+  useEffect(() => {
+    setRating(mediaItem?.review?.rating || 0);
+    setReviewText(mediaItem?.review?.text || "");
+  }, [mediaItem]);
 
   const handleSaveReview = () => {
     updateMediaItem(mediaItem.id, {
