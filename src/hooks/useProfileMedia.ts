@@ -16,19 +16,32 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
     tv: [],
     book: [],
   });
-  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [loadingMedia, setLoadingMedia] = useState(true); // Start with loading true
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchProfileMedia = async () => {
-      if (!displayUserId) return;
+      if (!displayUserId) {
+        if (isMounted) {
+          setLoadingMedia(false);
+        }
+        return;
+      }
       
       // Don't fetch directly if it's the current user's profile
       // as we'll use the MediaContext data instead
       if (isCurrentUserProfile) {
+        if (isMounted) {
+          setLoadingMedia(false);
+        }
         return;
       }
       
       setLoadingMedia(true);
+      setError(null);
+      
       try {
         console.log("Fetching profile media for user:", displayUserId);
         const { data, error } = await supabase
@@ -38,10 +51,13 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           
         if (error) {
           console.error("Error fetching profile media:", error);
-          throw error;
+          if (isMounted) {
+            setError(error);
+          }
+          return;
         }
         
-        if (data) {
+        if (data && isMounted) {
           console.log("Fetched media items:", data.length);
           // Use the utility function to transform database items to MediaItem type
           const transformedData = data.map(item => transformDbItemToMediaItem(item));
@@ -59,18 +75,28 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
             book: books,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching profile media:", error);
+        if (isMounted) {
+          setError(error);
+        }
       } finally {
-        setLoadingMedia(false);
+        if (isMounted) {
+          setLoadingMedia(false);
+        }
       }
     };
     
     fetchProfileMedia();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [displayUserId, isCurrentUserProfile]);
 
   return {
     profileMedia,
-    loadingMedia
+    loadingMedia,
+    error
   };
 }

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
@@ -30,13 +30,13 @@ const Profile = () => {
   const { profileMedia, loadingMedia } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
   // Effect to load media items if viewing current user's profile
-  useState(() => {
+  useEffect(() => {
     if (isCurrentUserProfile && user?.id) {
       console.log("Loading media items for current user:", user.id);
       // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }
-  });
+  }, [isCurrentUserProfile, user, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
