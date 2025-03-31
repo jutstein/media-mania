@@ -36,7 +36,11 @@ const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionPr
           <div>
             <Label htmlFor="rating">Rating</Label>
             <div className="mt-2">
-              <StarRating initialRating={rating} onChange={setRating} />
+              <StarRating 
+                initialRating={rating} 
+                onChange={setRating} 
+                allowHalfStars={true}
+              />
             </div>
           </div>
 
@@ -74,13 +78,19 @@ const MediaReviewSection = ({ mediaItem, updateMediaItem }: MediaReviewSectionPr
       ) : mediaItem.review ? (
         <div>
           <div className="mb-4">
-            <StarRating initialRating={mediaItem.review.rating} readonly />
+            <StarRating initialRating={mediaItem.review.rating} readonly allowHalfStars={true} />
             <div className="text-sm text-muted-foreground mt-1">
               Reviewed on {mediaItem.review.date}
             </div>
           </div>
 
           <p className="whitespace-pre-line">{mediaItem.review.text}</p>
+          
+          <div className="mt-4">
+            <Button onClick={() => setIsReviewEditing(true)} variant="outline" size="sm">
+              Edit Review
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="text-center py-6">

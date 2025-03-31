@@ -25,7 +25,10 @@ const MediaActions = ({
 
   return (
     <div className="flex flex-col space-y-3">
-      <Button onClick={() => setIsReviewEditing(!isReviewEditing)}>
+      <Button 
+        onClick={() => setIsReviewEditing(!isReviewEditing)}
+        variant={isReviewEditing ? "outline" : "default"}
+      >
         <Pencil className="mr-2 h-4 w-4" />
         {isReviewEditing ? "Cancel Editing Review" : "Edit Review"}
       </Button>
