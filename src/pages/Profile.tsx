@@ -62,14 +62,19 @@ const Profile = () => {
       
       setLoadingMedia(true);
       try {
+        console.log("Fetching profile media for user:", displayUserId);
         const { data, error } = await supabase
           .from('media_items')
           .select('*')
           .eq('user_id', displayUserId);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching profile media:", error);
+          throw error;
+        }
         
         if (data) {
+          console.log("Fetched media items:", data.length);
           // Use the utility function to transform database items to MediaItem type
           const transformedData = data.map(item => transformDbItemToMediaItem(item));
           
@@ -103,13 +108,19 @@ const Profile = () => {
       
       setLoadingProfile(true);
       try {
+        console.log("Fetching profile data for user:", displayUserId);
         const { data, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', displayUserId)
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching profile:", error);
+          throw error;
+        }
+        
+        console.log("Profile data fetched:", data);
         setProfileData(data);
         setProfileUserId(displayUserId);
         
@@ -129,6 +140,7 @@ const Profile = () => {
   // Effect to load media items if viewing current user's profile
   useEffect(() => {
     if (isCurrentUserProfile && user?.id) {
+      console.log("Loading media items for current user:", user.id);
       // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }

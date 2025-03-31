@@ -43,8 +43,13 @@ const MediaDetail = () => {
     
     setIsGeneratingImage(true);
     try {
+      console.log("Generating image for:", mediaItem.title);
       const imageUrl = await generateImageForTitle(mediaItem.title, mediaItem.type);
-      updateMediaItem(mediaItem.id, { imageUrl });
+      console.log("Generated image URL:", imageUrl);
+      
+      const updatedId = await updateMediaItem(mediaItem.id, { imageUrl });
+      console.log("Updated media item with image, ID:", updatedId);
+      
       setMediaItem({...mediaItem, imageUrl});
       toast.success("Image generated successfully!");
     } catch (error) {
@@ -58,22 +63,35 @@ const MediaDetail = () => {
   const handleSelectSharedImage = (imageUrl: string) => {
     if (!mediaItem) return;
     
+    console.log("Selecting shared image:", imageUrl);
     updateMediaItem(mediaItem.id, { 
       imageUrl,
       originalCreatorId: mediaItem.originalCreatorId || user?.id
+    }).then(() => {
+      setMediaItem({
+        ...mediaItem, 
+        imageUrl,
+        originalCreatorId: mediaItem.originalCreatorId || user?.id
+      });
+      toast.success("Image updated successfully!");
+    }).catch(error => {
+      console.error("Failed to update with shared image:", error);
+      toast.error("Failed to update image");
     });
-    setMediaItem({
-      ...mediaItem, 
-      imageUrl,
-      originalCreatorId: mediaItem.originalCreatorId || user?.id
-    });
-    toast.success("Image updated successfully!");
   };
 
   const handleUpdateMediaItem = async (id: string, updates: Partial<MediaItem>) => {
-    const updatedId = await updateMediaItem(id, updates);
-    setMediaItem(prev => prev ? {...prev, ...updates} : prev);
-    return updatedId;
+    console.log("Updating media item:", id, updates);
+    try {
+      const updatedId = await updateMediaItem(id, updates);
+      setMediaItem(prev => prev ? {...prev, ...updates} : prev);
+      console.log("Media item updated, ID:", updatedId);
+      return updatedId;
+    } catch (error) {
+      console.error("Error updating media item:", error);
+      toast.error("Failed to update media item");
+      return undefined;
+    }
   };
 
   // If we don't have a mediaItem yet (not in context), fetch it directly
@@ -106,7 +124,7 @@ const MediaDetail = () => {
             userId={user?.id}
             creatorProfile={null}
             updateMediaItem={handleUpdateMediaItem}
-            generateImageForTitle={generateImageForTitle}
+            generateImageForTitle={handleGenerateImage}
             handleSelectSharedImage={handleSelectSharedImage}
           />
 
