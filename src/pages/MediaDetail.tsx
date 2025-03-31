@@ -55,7 +55,7 @@ const MediaDetail = () => {
               imageUrl: data.image_url || "",
               addedDate: data.added_date || new Date().toISOString().split("T")[0],
               originalCreatorId: data.original_creator_id || null,
-              seasons: Array.isArray(data.seasons) ? data.seasons as Season[] : [], // Cast seasons to Season[] with validation
+              seasons: data.seasons ? transformSeasons(data.seasons) : [], // Transform seasons with type safety
               review: data.review_rating ? {
                 rating: data.review_rating,
                 text: data.review_text || "",
@@ -81,6 +81,39 @@ const MediaDetail = () => {
       setIsLoading(false);
     }
   }, [id, getMediaItemById, navigate]);
+
+  // Helper function to safely transform seasons data
+  const transformSeasons = (seasonsData: any): Season[] => {
+    if (!seasonsData) return [];
+    
+    try {
+      // If it's already an array, map through and ensure each item has required properties
+      if (Array.isArray(seasonsData)) {
+        return seasonsData.map(season => ({
+          number: typeof season.number === 'number' ? season.number : 0,
+          watched: Boolean(season.watched),
+          episodesWatched: typeof season.episodesWatched === 'number' ? season.episodesWatched : undefined,
+          totalEpisodes: typeof season.totalEpisodes === 'number' ? season.totalEpisodes : undefined,
+          rating: typeof season.rating === 'number' ? season.rating : undefined
+        }));
+      }
+      
+      // If it's a string (JSON), parse it first
+      if (typeof seasonsData === 'string') {
+        const parsed = JSON.parse(seasonsData);
+        if (Array.isArray(parsed)) {
+          return transformSeasons(parsed);
+        }
+      }
+      
+      // Fallback to empty array if data is in an unexpected format
+      console.error("Unexpected seasons data format:", seasonsData);
+      return [];
+    } catch (error) {
+      console.error("Error transforming seasons data:", error);
+      return [];
+    }
+  };
 
   // Fetch original creator profile if applicable
   useEffect(() => {
