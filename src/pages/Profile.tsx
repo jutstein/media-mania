@@ -36,16 +36,25 @@ const Profile = () => {
       loadMediaItems(user.id);
     }
   }, [isCurrentUserProfile, user?.id, loadMediaItems]);
+
+  console.log({
+    isCurrentUserProfile,
+    displayUserId,
+    profileData,
+    loadingProfile,
+    loadingMedia,
+    mediaLoading: isMediaLoading,
+    mediaItems: isCurrentUserProfile ? [...movies, ...tvShows, ...books].length : profileMedia.all.length
+  });
   
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
   }
 
   // Determine if we're still loading data
-  const isLoading = 
-    (isMediaLoading && isCurrentUserProfile) || 
-    loadingProfile || 
-    (loadingMedia && !isCurrentUserProfile);
+  const isLoading = (isMediaLoading && isCurrentUserProfile) || 
+                   loadingProfile || 
+                   (!profileData && displayUserId);
 
   // Display loading state
   if (isLoading) {

@@ -25,29 +25,28 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
     isMountedRef.current = true;
     
     const fetchProfileMedia = async () => {
-      // If this is the current user's profile, we don't need to fetch media
-      // as it will be provided via MediaContext
-      if (isCurrentUserProfile) {
-        setLoadingMedia(false);
-        return;
-      }
-      
-      // Skip if we don't have a user ID to fetch
-      if (!displayUserId) {
-        setLoadingMedia(false);
-        return;
-      }
-      
-      // Skip if we've already fetched this user's media
-      if (displayUserId === lastFetchedUserId.current) {
-        return;
-      }
-      
-      setLoadingMedia(true);
-      setError(null);
-      
       try {
+        // If no user ID is provided, set loading to false and return
+        if (!displayUserId) {
+          setLoadingMedia(false);
+          return;
+        }
+
+        // Skip fetching if this is current user's profile as media comes from MediaContext
+        if (isCurrentUserProfile) {
+          setLoadingMedia(false);
+          return;
+        }
+        
+        // If we've already fetched this user's media and it's the same user, don't fetch again
+        if (displayUserId === lastFetchedUserId.current && profileMedia.all.length > 0) {
+          setLoadingMedia(false);
+          return;
+        }
+        
         console.log("Fetching profile media for user:", displayUserId);
+        setLoadingMedia(true);
+        
         const { data, error } = await supabase
           .from('media_items')
           .select('*')
@@ -57,6 +56,7 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           console.error("Error fetching profile media:", error);
           if (isMountedRef.current) {
             setError(error);
+            setLoadingMedia(false);
           }
           return;
         }
@@ -81,13 +81,14 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           
           lastFetchedUserId.current = displayUserId;
         }
+        
+        if (isMountedRef.current) {
+          setLoadingMedia(false);
+        }
       } catch (error: any) {
         console.error("Error fetching profile media:", error);
         if (isMountedRef.current) {
           setError(error);
-        }
-      } finally {
-        if (isMountedRef.current) {
           setLoadingMedia(false);
         }
       }
@@ -98,7 +99,7 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
     return () => {
       isMountedRef.current = false;
     };
-  }, [displayUserId, isCurrentUserProfile]);
+  }, [displayUserId, isCurrentUserProfile, profileMedia.all.length]);
 
   return {
     profileMedia,
