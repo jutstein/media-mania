@@ -12,7 +12,7 @@ import MediaImageSection from "@/components/media/MediaImageSection";
 import MediaDetailsSection from "@/components/media/MediaDetailsSection";
 import MediaReviewSection from "@/components/media/MediaReviewSection";
 import MediaActions from "@/components/media/MediaActions";
-import { MediaItem } from "@/types";
+import { MediaItem, MediaType, Season } from "@/types";
 
 const MediaDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,13 +49,13 @@ const MediaDetail = () => {
             const transformedItem: MediaItem = {
               id: data.id,
               title: data.title,
-              type: data.type,
+              type: data.type as MediaType, // Cast to MediaType
               creator: data.creator || "",
               releaseYear: data.release_year || 0,
               imageUrl: data.image_url || "",
               addedDate: data.added_date || new Date().toISOString().split("T")[0],
               originalCreatorId: data.original_creator_id || null,
-              seasons: data.seasons || [],
+              seasons: Array.isArray(data.seasons) ? data.seasons as Season[] : [], // Cast seasons to Season[] with validation
               review: data.review_rating ? {
                 rating: data.review_rating,
                 text: data.review_text || "",
