@@ -22,7 +22,6 @@ const MediaDetail = () => {
   const mediaItem = getMediaItemById(id || "");
   const [creatorProfile, setCreatorProfile] = useState<{username: string | null} | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [isReviewEditing, setIsReviewEditing] = useState(false);
 
   useEffect(() => {
     if (!mediaItem) {
@@ -124,8 +123,6 @@ const MediaDetail = () => {
 
             <MediaActions
               title={mediaItem.title}
-              isReviewEditing={isReviewEditing}
-              setIsReviewEditing={setIsReviewEditing}
               onDelete={handleDelete}
             />
 

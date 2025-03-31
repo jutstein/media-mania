@@ -26,7 +26,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <Link to="/" className="font-semibold text-xl tracking-tight mr-6">
-            MediaTrackr
+            MediaMania
           </Link>
           <NavLinks />
         </div>
