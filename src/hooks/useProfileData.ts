@@ -17,30 +17,34 @@ export function useProfileData(userId: string | null | undefined) {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
   
-  // Use a ref to track if this is the first render
-  const initialFetchDone = useRef(false);
+  // Use a ref to track component mount state
+  const isMounted = useRef(true);
+  // Use a ref to track if we've already fetched data
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
     
-    // Skip re-fetching if userId hasn't changed and we've already fetched once
-    if (userId === profileUserId && initialFetchDone.current) {
+    // If we don't have a userId, there's nothing to fetch
+    if (!userId) {
+      console.log("No user ID provided for profile data");
+      setLoadingProfile(false);
+      return;
+    }
+    
+    // If we've already fetched this user's data and it matches our state, don't fetch again
+    if (hasFetched.current && userId === profileUserId && profileData) {
+      console.log("Already fetched profile data for", userId);
+      setLoadingProfile(false);
       return;
     }
     
     const fetchProfile = async () => {
-      if (!userId) {
-        if (isMounted) {
-          setLoadingProfile(false);
-        }
-        return;
-      }
-      
+      console.log("Fetching profile data for user:", userId);
       setLoadingProfile(true);
       setError(null);
       
       try {
-        console.log("Fetching profile data for user:", userId);
         const { data, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -49,7 +53,7 @@ export function useProfileData(userId: string | null | undefined) {
           
         if (error) {
           console.error("Error fetching profile:", error);
-          if (isMounted) {
+          if (isMounted.current) {
             setError(error);
             setLoadingProfile(false);
           }
@@ -58,28 +62,28 @@ export function useProfileData(userId: string | null | undefined) {
         
         console.log("Profile data fetched:", data);
         
-        if (isMounted) {
+        if (isMounted.current) {
           setProfileData(data);
           setProfileUserId(userId);
-          initialFetchDone.current = true;
+          hasFetched.current = true;
           
           // Also fetch follow counts
           try {
             const counts = await getFollowCounts(userId);
-            if (isMounted) {
+            if (isMounted.current) {
               setFollowCounts(counts);
             }
           } catch (followError) {
             console.error("Error fetching follow counts:", followError);
-          } finally {
-            if (isMounted) {
-              setLoadingProfile(false);
-            }
+          }
+          
+          if (isMounted.current) {
+            setLoadingProfile(false);
           }
         }
       } catch (error: any) {
         console.error("Error fetching profile:", error);
-        if (isMounted) {
+        if (isMounted.current) {
           setError(error);
           setLoadingProfile(false);
         }
@@ -89,9 +93,9 @@ export function useProfileData(userId: string | null | undefined) {
     fetchProfile();
     
     return () => {
-      isMounted = false;
+      isMounted.current = false;
     };
-  }, [userId, getFollowCounts]); // Remove profileUserId from dependencies
+  }, [userId, getFollowCounts]);
 
   return {
     profileData,

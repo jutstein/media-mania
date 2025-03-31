@@ -29,15 +29,7 @@ const Profile = () => {
   const { profileData, profileUserId, followCounts, loadingProfile } = useProfileData(displayUserId);
   const { profileMedia, loadingMedia } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
-  // Load media items if viewing current user's profile
-  useEffect(() => {
-    if (isCurrentUserProfile && user?.id) {
-      console.log("Loading media items for current user:", user.id);
-      loadMediaItems(user.id);
-    }
-  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
-
-  console.log({
+  console.log("Profile render:", {
     isCurrentUserProfile,
     displayUserId,
     profileData,
@@ -46,15 +38,21 @@ const Profile = () => {
     mediaLoading: isMediaLoading,
     mediaItems: isCurrentUserProfile ? [...movies, ...tvShows, ...books].length : profileMedia.all.length
   });
+
+  // Load media items if viewing current user's profile
+  useEffect(() => {
+    if (isCurrentUserProfile && user?.id) {
+      console.log("Loading media items for current user:", user.id);
+      loadMediaItems(user.id);
+    }
+  }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
   }
 
   // Determine if we're still loading data
-  const isLoading = (isMediaLoading && isCurrentUserProfile) || 
-                   loadingProfile || 
-                   (!profileData && displayUserId);
+  const isLoading = (isCurrentUserProfile && isMediaLoading) || loadingProfile;
 
   // Display loading state
   if (isLoading) {
@@ -93,7 +91,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4">
+    <div className="min-h-screen pt-24 pb-16 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
         <ProfileHeader 
           profileData={profileData}
