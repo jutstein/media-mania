@@ -42,7 +42,7 @@ const ProfileLoading = () => {
         
         <div className="flex items-center justify-center mt-8 text-primary">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          <span>Loading profile data...</span>
+          <span className="text-lg font-semibold">Loading profile data...</span>
         </div>
       </div>
     </div>

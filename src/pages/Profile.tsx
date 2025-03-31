@@ -24,20 +24,17 @@ const Profile = () => {
   // Determine if this is the current user's profile or someone else's
   const isCurrentUserProfile = !userId || (user && userId === user.id);
   const displayUserId = isCurrentUserProfile ? user?.id : userId;
-
-  // Use custom hooks to load profile data
-  const { profileData, profileUserId, followCounts, loadingProfile } = useProfileData(displayUserId);
-  const { profileMedia, loadingMedia } = useProfileMedia(displayUserId, isCurrentUserProfile);
-
-  console.log("Profile render:", {
+  
+  console.log("Profile component rendering with:", {
     isCurrentUserProfile,
     displayUserId,
-    profileData,
-    loadingProfile,
-    loadingMedia,
-    mediaLoading: isMediaLoading,
-    mediaItems: isCurrentUserProfile ? [...movies, ...tvShows, ...books].length : profileMedia.all.length
+    userId: userId || "not provided",
+    currentUser: user?.id || "not logged in"
   });
+
+  // Use custom hooks to load profile data
+  const { profileData, profileUserId, followCounts, loadingProfile, error: profileError } = useProfileData(displayUserId);
+  const { profileMedia, loadingMedia, error: mediaError } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
   // Load media items if viewing current user's profile
   useEffect(() => {
@@ -47,12 +44,26 @@ const Profile = () => {
     }
   }, [isCurrentUserProfile, user?.id, loadMediaItems]);
   
+  // Display login prompt if not logged in and viewing own profile
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
   }
+  
+  // Log loading status
+  console.log("Loading states:", {
+    loadingProfile,
+    loadingMedia,
+    isMediaLoading: isCurrentUserProfile ? isMediaLoading : false,
+    profileData: profileData ? "loaded" : "not loaded",
+    mediaCount: isCurrentUserProfile ? [...movies, ...tvShows, ...books].length : profileMedia.all.length
+  });
 
   // Determine if we're still loading data
-  const isLoading = (isCurrentUserProfile && isMediaLoading) || loadingProfile;
+  const isLoading = (isCurrentUserProfile && isMediaLoading) || loadingProfile || loadingMedia;
+
+  // Log any errors
+  if (profileError) console.error("Profile data error:", profileError);
+  if (mediaError) console.error("Media data error:", mediaError);
 
   // Display loading state
   if (isLoading) {

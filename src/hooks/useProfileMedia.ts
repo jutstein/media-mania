@@ -20,8 +20,16 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
   const [error, setError] = useState<Error | null>(null);
   const isMounted = useRef(true);
   const hasFetched = useRef(false);
+  const userId = useRef(displayUserId);
 
   useEffect(() => {
+    // Reset fetch status if user ID changes
+    if (displayUserId !== userId.current) {
+      hasFetched.current = false;
+      userId.current = displayUserId;
+    }
+    
+    // Mark component as mounted
     isMounted.current = true;
     
     const fetchProfileMedia = async () => {
@@ -40,7 +48,7 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
       }
       
       // If we've already fetched this user's media, don't fetch again
-      if (hasFetched.current && profileMedia.all.length > 0) {
+      if (hasFetched.current) {
         console.log("Already fetched media for this user");
         setLoadingMedia(false);
         return;
@@ -73,20 +81,19 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
           const tvShows = transformedData.filter(item => item.type === 'tv');
           const books = transformedData.filter(item => item.type === 'book');
           
-          setProfileMedia({
-            all: transformedData.sort((a, b) => 
-              new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
-            ),
-            movie: movies,
-            tv: tvShows,
-            book: books,
-          });
-          
-          hasFetched.current = true;
-        }
-        
-        if (isMounted.current) {
-          setLoadingMedia(false);
+          if (isMounted.current) {
+            setProfileMedia({
+              all: transformedData.sort((a, b) => 
+                new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
+              ),
+              movie: movies,
+              tv: tvShows,
+              book: books,
+            });
+            
+            hasFetched.current = true;
+            setLoadingMedia(false);
+          }
         }
       } catch (error: any) {
         console.error("Error fetching profile media:", error);

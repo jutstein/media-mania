@@ -21,8 +21,15 @@ export function useProfileData(userId: string | null | undefined) {
   const isMounted = useRef(true);
   // Use a ref to track if we've already fetched data
   const hasFetched = useRef(false);
+  const currentUserId = useRef(userId);
 
   useEffect(() => {
+    // Reset fetch status if user ID changes
+    if (userId !== currentUserId.current) {
+      hasFetched.current = false;
+      currentUserId.current = userId;
+    }
+    
     isMounted.current = true;
     
     // If we don't have a userId, there's nothing to fetch
@@ -33,7 +40,7 @@ export function useProfileData(userId: string | null | undefined) {
     }
     
     // If we've already fetched this user's data and it matches our state, don't fetch again
-    if (hasFetched.current && userId === profileUserId && profileData) {
+    if (hasFetched.current && userId === profileUserId) {
       console.log("Already fetched profile data for", userId);
       setLoadingProfile(false);
       return;
@@ -65,7 +72,6 @@ export function useProfileData(userId: string | null | undefined) {
         if (isMounted.current) {
           setProfileData(data);
           setProfileUserId(userId);
-          hasFetched.current = true;
           
           // Also fetch follow counts
           try {
@@ -77,9 +83,8 @@ export function useProfileData(userId: string | null | undefined) {
             console.error("Error fetching follow counts:", followError);
           }
           
-          if (isMounted.current) {
-            setLoadingProfile(false);
-          }
+          hasFetched.current = true;
+          setLoadingProfile(false);
         }
       } catch (error: any) {
         console.error("Error fetching profile:", error);
