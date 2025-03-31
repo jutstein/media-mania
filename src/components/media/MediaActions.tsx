@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import DeleteMediaDialog from "./DeleteMediaDialog";
-import { MediaItem } from "@/types";
 
 interface MediaActionsProps {
   title: string;

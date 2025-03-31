@@ -33,17 +33,9 @@ const MediaImageSection = ({
     if (!mediaItem.title) return;
     
     try {
-      console.log("Generating image for:", mediaItem.title);
       const imageUrl = await generateImageForTitle(mediaItem.title, mediaItem.type);
-      console.log("Generated image URL:", imageUrl);
-      
-      // Update the local state first for immediate feedback
+      updateMediaItem(mediaItem.id, { imageUrl });
       setEditImageUrl(imageUrl);
-      
-      // Then update in the database
-      const updatedId = await updateMediaItem(mediaItem.id, { imageUrl });
-      console.log("Updated media item with new image, ID:", updatedId);
-      
       toast.success("Image generated successfully!");
     } catch (error) {
       console.error("Failed to generate image:", error);
@@ -51,18 +43,11 @@ const MediaImageSection = ({
     }
   };
 
-  const handleSaveDetails = async () => {
-    try {
-      console.log("Saving image URL:", editImageUrl);
-      await updateMediaItem(mediaItem.id, {
-        imageUrl: editImageUrl,
-      });
-      setIsEditingImage(false);
-      toast.success("Image updated successfully!");
-    } catch (error) {
-      console.error("Error updating image:", error);
-      toast.error("Failed to update image");
-    }
+  const handleSaveDetails = () => {
+    updateMediaItem(mediaItem.id, {
+      imageUrl: editImageUrl,
+    });
+    setIsEditingImage(false);
   };
 
   const iconMap = {
@@ -136,9 +121,9 @@ const MediaImageSection = ({
         </div>
       ) : (
         <div className="aspect-[2/3] rounded-xl overflow-hidden glass-morph p-1 mb-4">
-          {mediaItem.imageUrl ? (
+          {editImageUrl ? (
             <img
-              src={mediaItem.imageUrl}
+              src={editImageUrl}
               alt={mediaItem.title}
               className="h-full w-full object-cover rounded-lg"
             />
@@ -166,7 +151,7 @@ const MediaImageSection = ({
         </div>
       )}
       
-      {mediaItem.imageUrl && !isEditingImage && (
+      {editImageUrl && !isEditingImage && (
         <div className="mb-4 flex flex-col space-y-2">
           <Button 
             variant="outline" 
