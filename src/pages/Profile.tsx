@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
@@ -29,21 +29,25 @@ const Profile = () => {
   const { profileData, profileUserId, followCounts, loadingProfile } = useProfileData(displayUserId);
   const { profileMedia, loadingMedia } = useProfileMedia(displayUserId, isCurrentUserProfile);
 
-  // Effect to load media items if viewing current user's profile
-  useEffect(() => {
+  // Memoize the loadMediaItems function to prevent infinite calls
+  const loadUserMedia = useCallback(() => {
     if (isCurrentUserProfile && user?.id) {
       console.log("Loading media items for current user:", user.id);
-      // Only load from MediaContext if it's the current user
       loadMediaItems(user.id);
     }
   }, [isCurrentUserProfile, user, loadMediaItems]);
+
+  // Effect to load media items if viewing current user's profile
+  useEffect(() => {
+    loadUserMedia();
+  }, [loadUserMedia]);
   
   if (!user && isCurrentUserProfile) {
     return <LoginPrompt />;
   }
 
   // Display loading state
-  if (isLoading || loadingProfile || (loadingMedia && !isCurrentUserProfile)) {
+  if ((isLoading && isCurrentUserProfile) || loadingProfile || (loadingMedia && !isCurrentUserProfile)) {
     return <ProfileLoading />;
   }
 

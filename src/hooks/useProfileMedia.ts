@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MediaItem } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { transformDbItemToMediaItem } from "@/utils/mediaUtils";
@@ -16,13 +16,24 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
     tv: [],
     book: [],
   });
-  const [loadingMedia, setLoadingMedia] = useState(true); // Start with loading true
+  const [loadingMedia, setLoadingMedia] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const lastFetchedUserId = useRef<string | null | undefined>(null);
 
   useEffect(() => {
     let isMounted = true;
     
+    // Skip re-fetching if userId hasn't changed and we've already fetched once
+    if (displayUserId === lastFetchedUserId.current && lastFetchedUserId.current !== null) {
+      return;
+    }
+    
     const fetchProfileMedia = async () => {
+      // Reset loading state for new user
+      if (displayUserId !== lastFetchedUserId.current) {
+        setLoadingMedia(true);
+      }
+      
       if (!displayUserId) {
         if (isMounted) {
           setLoadingMedia(false);
@@ -39,7 +50,6 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
         return;
       }
       
-      setLoadingMedia(true);
       setError(null);
       
       try {
@@ -74,6 +84,8 @@ export function useProfileMedia(displayUserId: string | null | undefined, isCurr
             tv: tvShows,
             book: books,
           });
+          
+          lastFetchedUserId.current = displayUserId;
         }
       } catch (error: any) {
         console.error("Error fetching profile media:", error);
